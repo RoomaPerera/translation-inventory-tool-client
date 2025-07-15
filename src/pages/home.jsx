@@ -119,7 +119,7 @@ const Home = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 bg-gradient-to-br from-[#f9fafb] to-[#e9f5f9]">
+    <div className="bg-gradient-to-br from-[#f9fafb] to-[#e9f5f9] min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-sm border border-[#e3f2fd]">
         <h1 className="text-xl font-bold text-[#164481]">GTN Portal</h1>
@@ -150,10 +150,6 @@ const Home = () => {
               </span>
             </div>
           </div>
-
-          <Link to="/settings" className="text-[#178aaa] hover:text-[#10708c] transition-colors">
-            Settings
-          </Link>
 
           <div className="relative" ref={dropdownRef}>
             <div className="flex items-center">
