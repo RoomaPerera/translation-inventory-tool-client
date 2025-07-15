@@ -1,7 +1,6 @@
-// src/services/languageService.js
 import axios from 'axios';
 
-// Set your API base URL 
+// API base URL 
 const API_URL = 'http://localhost:5000/api';
 
 // Create axios instance with base configuration
@@ -11,7 +10,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000 // 10 seconds timeout
+  timeout: 10000 
 });
 
 // Language-related API services
@@ -64,7 +63,7 @@ const languageService = {
   }
 };
 
-// Helper function to handle API errors (same as in projectService.js)
+// Helper function to handle API errors 
 function handleApiError(error) {
   if (error.response) {
     console.error('Response data:', error.response.data);
