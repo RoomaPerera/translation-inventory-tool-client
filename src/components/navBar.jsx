@@ -10,7 +10,7 @@ const navLinks = [
   { name: 'Settings', to: '/settings', roles: ['Administrator', 'Developer','Translater'] },
 ];
 
-export const NavBar = ({ user, onLogout }) => {
+export const NavBar = (props) => {
   const location = useLocation();
 
   return (
@@ -24,7 +24,7 @@ export const NavBar = ({ user, onLogout }) => {
       <ul className="flex space-x-6">
         {navLinks.map(
           (link) =>
-            link.roles.includes(user.role) && (
+            link.roles.includes(props.user.role) && (
               <li key={link.name}>
                 <Link
                   to={link.to}
@@ -43,11 +43,11 @@ export const NavBar = ({ user, onLogout }) => {
       {/* User Profile & Logout */}
       <div className="flex items-center space-x-4">
         <div className="text-right">
-          <div className="text-white font-bold">{user.name}</div>
-          <div className="text-indigo-200 text-sm">{user.role}</div>
+          <div className="text-white font-bold">{props.user.name}</div>
+          <div className="text-indigo-200 text-sm">{props.user.role}</div>
         </div>
         <button
-          onClick={onLogout}
+          onClick={props.onLogout}
           className="ml-4 px-4 py-2 rounded bg-white/80 text-gray-800 font-semibold hover:bg-white transition"
         >
           Log out
@@ -55,4 +55,6 @@ export const NavBar = ({ user, onLogout }) => {
       </div>
     </nav>
   );
-}; 
+};
+
+export default NavBar; 
