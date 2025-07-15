@@ -1,30 +1,21 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-
-//pages and components
-import Registration from './pages/registration'
-import Login from "./pages/login"
-import Navbar from "./components/navBar"
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import AppRouter from './router/AppRouter';
+// import { AuthProvider } from './context/AuthContext'; // If using auth
 
 function App() {
-
   return (
-    <div className="App">
-      <Router>
-        <div className="pages">
-          <Routes>
-            <Route
-              path="/register"
-              element={<Registration />}
-            />
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-          </Routes>
+    <BrowserRouter>
+      {/* <AuthProvider> */}
+        <div className="min-h-screen flex flex-col">
+          {/* Navbar can go here if you want it on all pages */}
+          <main className="flex-grow p-4">
+            <AppRouter />
+          </main>
         </div>
-      </Router>
-    </div>
-  )
+      {/* </AuthProvider> */}
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

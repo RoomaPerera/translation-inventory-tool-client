@@ -1,0 +1,49 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import Navbar from '../components/navBar';
+import Home from '../pages/Home';
+import Login from '../pages/login';
+import Registration from '../pages/Registration';
+import ButtonDemo from '../pages/ButtonDemo';
+import { AuthContext } from '../context/AuthContext';
+
+function AppContent() {
+  const { user } = React.useContext(AuthContext);
+  const location = useLocation();
+
+  // If not logged in, allow access only to /login and /register
+  if (!user && location.pathname !== '/login' && location.pathname !== '/register') {
+    return <Navigate to="/login" />;
+  }
+
+  // If logged in and on /login, redirect to home
+  if (user && location.pathname === '/login') {
+    return <Navigate to="/" />;
+  }
+
+  // Only show Navbar if not on the login page
+  const showNavbar = location.pathname !== '/login';
+
+  return (
+    <>
+      {showNavbar && <Navbar />}
+      <div className="pages">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Registration />} />
+          <Route path="/button-demo" element={<ButtonDemo />} />
+        </Routes>
+      </div>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
+
