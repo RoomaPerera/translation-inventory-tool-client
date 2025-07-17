@@ -1,39 +1,49 @@
+// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Button from '../components/Button'; // Import your Button component
+import { Link, useNavigate } from 'react-router-dom';
+import Button from '../components/Button';
+import Side from '../components/Side';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    remember: false
+    remember: false,
   });
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Login submitted:', formData);
-    // Add your authentication logic here
+    // Your authentication logic here
+    navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="p-8">
-          <div className="text-center mb-8">
+    <div className="flex flex-row min-h-screen">
+      {/* Sidebar */}
+      <Side />
+
+      {/* Login Form */}
+      <div className="flex w-1/2 items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-8 text-center">
+            
             <h1 className="text-3xl font-bold text-purple-700">GTN Portal</h1>
             <h2 className="mt-2 text-xl text-gray-600">Log In</h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <div className="space-y-2 text-left">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address
               </label>
@@ -49,7 +59,7 @@ const LoginPage = () => {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 text-left">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
@@ -79,7 +89,10 @@ const LoginPage = () => {
                   Remember me
                 </label>
               </div>
-              <Link to="/forgot-password" className="text-sm font-medium text-purple-600 hover:text-purple-500">
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-purple-600 hover:text-purple-500"
+              >
                 Forgot Password?
               </Link>
             </div>
@@ -89,10 +102,13 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="p-8 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-purple-600 hover:text-purple-800">
+              <Link
+                to="/register"
+                className="font-medium text-purple-600 hover:text-purple-800"
+              >
                 Sign Up
               </Link>
             </p>
