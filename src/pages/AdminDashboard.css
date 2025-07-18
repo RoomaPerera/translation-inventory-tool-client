@@ -1,0 +1,323 @@
+/* General Body Styles */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #e3f2fd; /* Light blue background */
+}
+
+.admin-dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 250px;
+    background: linear-gradient(to bottom, #3a1f7c, #41A5B5); /* Purple gradient */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+}
+
+.logo-container h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.nav-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-menu li {
+    margin-bottom: 15px;
+}
+
+.nav-menu li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+
+
+.nav-menu li a:hover {
+    background-color: rgba(177, 205, 225, 0.5); /* 0.5 means 50% opacity */
+}
+
+
+.user-profile {
+    margin-top: auto;
+    border-top: 1px solid #3a1f7c;
+    padding-top: 20px;
+}
+
+.user-name {
+    margin: 0 0 5px 0;
+    font-weight: bold;
+}
+
+.user-role {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    color: #e8f3f6; /* Lighter purple for role */
+}
+
+.logout-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #3a1f7c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+    background-color: rgba(177, 205, 225, 0.5);
+}
+
+/* Main Content Styles */
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    background-color: #f4f6f8;
+}
+
+/* Header Styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-left h2 {
+    margin: 0;
+    margin-right: 20px;
+}
+
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.search-hint {
+    font-size: 12px;
+    color: #888;
+}
+
+.assign-language-button {
+    background-color: #5221a7; /* Purple */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.assign-language-button:hover {
+    background-color:  rgba(82, 33, 167, 0.8);
+}
+
+/* Custom Select Dropdown */
+.custom-select {
+    position: relative;
+    margin-right: 20px;
+}
+
+.custom-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 8px 30px 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.custom-select::after {
+    content: '▼';
+    font-size: 12px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* Content Toolbar Styles */
+.content-toolbar {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.toolbar-button {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 15px;
+}
+
+.radio-group {
+    display: flex;
+    align-items: center;
+    margin-left: 15px;
+}
+
+.radio-group input {
+    margin-right: 5px;
+}
+
+.radio-group label {
+    margin-right: 15px;
+    font-size: 14px;
+}
+
+/* Table Styles */
+.table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+thead {
+    background-color: #5221a7; /* Dark Purple Header */
+    color: white;
+}
+
+tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.action-buttons {
+    text-align: right;
+}
+
+.edit-button, .delete-button {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.delete-button {
+    background-color: transparent;
+    color: #333;
+}
+/* Add this class to blur the dashboard when a modal is open */
+.admin-dashboard.blurred > * {
+filter: blur(4px);
+}
+
+/* --- Custom Rubix Dropdown --- */
+.rubix-dropdown {
+    position: relative;
+    margin-right: 20px;
+}
+
+.rubix-dropdown-button {
+    padding: 8px 30px 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    width: 150px; /* Adjust as needed */
+    text-align: left;
+}
+
+.rubix-dropdown-button::after {
+    content: '▼';
+    font-size: 12px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    transition: transform 0.2s;
+}
+
+.rubix-dropdown-button.open::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.rubix-dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 100%;
+    z-index: 10;
+    margin-top: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.rubix-dropdown-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.rubix-dropdown-item:hover {
+    background-color: #f0f0f0;
+}
