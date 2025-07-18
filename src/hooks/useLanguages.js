@@ -7,7 +7,7 @@ export const useLanguages = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/auth/getLanguages`, { credentials: 'include' })
+        fetch(`${API_BASE}/api/auth/languages`, { credentials: 'include' })
             .then(r => r.json())
             .then(j => { setLanguages(j.languages || []); setLoading(false) })
             .catch(e => { setError(e.message); setLoading(false) });

@@ -1,32 +1,38 @@
-// src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import Home from './pages/home';
-import Settings from './pages/settings';
-import TranslatorManagement from './pages/translatorManagement';
-import TranslationDetails from './pages/translationDetails';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthContextProvider } from './context/AuthContext';
+import Navbar from './components/navBar';
+import Login from './pages/login';
+import Register from './pages/register';
+import HomePage from './pages/HomePage';
+import { useAuthContext } from './hooks/useAuthContext';
 
-function App() {
-  return (
-    <Router>
-      <div className="App min-h-screen bg-gray-50 flex">
-        {/* Sidebar */}
-        <Sidebar />
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1 p-6">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/translator-management" element={<TranslatorManagement />} />
-              <Route path="/projects/:projectId/translations" element={<TranslationDetails />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </Router>
-  );
+
+function PrivateRoute({ children }) {
+    const { user } = useAuthContext();
+    return user ? children : <Navigate to="/login" />;
 }
 
-export default App;
+function AppLayout() {
+    const { user } = useAuthContext();
+
+    return (
+        <>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+            </Routes>
+        </>
+    );
+}
+
+export default function App() {
+    return (
+        <AuthContextProvider>
+            <Router>
+                <AppLayout />
+            </Router>
+        </AuthContextProvider>
+    );
+}

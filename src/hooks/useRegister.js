@@ -23,8 +23,7 @@ export const useRegister = () => {
                 setIsLoading(false);
                 return null;
             }
-            localStorage.setItem('user', JSON.stringify(json));
-            dispatch({ type: 'LOGIN', payload: json });
+
             setIsLoading(false);
             return json;
         } catch {
