@@ -1,9 +1,8 @@
-// src/components/Side.jsx
 import React from 'react';
 
 const Side = () => {
   return (
-    <div className="flex flex-col justify-center items-center w-1/2 min-h-screen bg-gradient-to-b from-indigo-700 via-blue-800 to-teal-500 text-white p-8">
+    <div className="flex flex-col justify-center items-center w-1/2 min-h-screen bg-gradient-to-b from-[#553A99] via-[#5B63B7] to-[#4FB6B2] text-white p-8">
       <img
         src="/GTN Logo 3.png"
         alt="GTN Logo"

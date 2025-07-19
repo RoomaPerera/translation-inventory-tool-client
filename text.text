@@ -1,0 +1,19 @@
+
+AnotherStrongPassw09rd!
+
+
+{
+    "userName": "John Doe",
+    "email": "john112@example.com",
+    "password": "AnotherStrongPassw0rd!",
+    "role": "Translator",
+    "languages": ["en", "fr"]
+}
+
+{
+    "userName": "John Doe",
+    "email": "john11@example.com",
+    "password": "AnotherStrongPassw0rd!",
+    "role": "Translator",
+    "languages": ["en", "fr"]
+}

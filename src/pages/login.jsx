@@ -1,52 +1,60 @@
 // src/pages/LoginPage.jsx
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Side from '../components/Side';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    remember: false,
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '', remember: false });
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login submitted:', formData);
-    // Your authentication logic here
-    navigate('/');
+    setError('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      navigate('/');
+    } catch (err) {
+      setError('Server error. Please try again later.');
+      console.error('Login error:', err);
+    }
   };
 
   return (
     <div className="flex flex-row min-h-screen">
-      {/* Sidebar */}
       <Side />
-
-      {/* Login Form */}
       <div className="flex w-1/2 items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-8 text-center">
-            
             <h1 className="text-3xl font-bold text-purple-700">GTN Portal</h1>
             <h2 className="mt-2 text-xl text-gray-600">Log In</h2>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
           </div>
-
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             <div className="space-y-2 text-left">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
               <input
                 type="email"
                 id="email"
@@ -60,9 +68,7 @@ const LoginPage = () => {
             </div>
 
             <div className="space-y-2 text-left">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 id="password"
@@ -85,9 +91,7 @@ const LoginPage = () => {
                   onChange={handleChange}
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
+                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">Remember me</label>
               </div>
               <Link
                 to="/forgot-password"
@@ -97,20 +101,13 @@ const LoginPage = () => {
               </Link>
             </div>
 
-            <Button type="submit" variant="primary" className="w-full">
-              Log In
-            </Button>
+            <Button type="submit" variant="primary" className="w-full">Log In</Button>
           </form>
 
           <div className="p-8 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-purple-600 hover:text-purple-800"
-              >
-                Sign Up
-              </Link>
+              <Link to="/register" className="font-medium text-purple-600 hover:text-purple-800">Sign Up</Link>
             </p>
           </div>
         </div>

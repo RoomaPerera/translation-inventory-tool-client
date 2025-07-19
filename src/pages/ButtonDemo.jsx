@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { NavBar } from '../components/NavBar';
+// import { NavBar } from '../components/NavBar';
+import NavBar from '../components/NavBar';
 import Home from '../pages/Home';
 import Login from '../pages/login';
-import Registration from '../pages/Registration';
+// import Registration from './Registration';
 import ButtonDemo from '../pages/ButtonDemo';
 import { AuthContext } from '../context/AuthContext';
 

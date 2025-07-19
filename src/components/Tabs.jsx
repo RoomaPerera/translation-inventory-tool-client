@@ -18,16 +18,16 @@ export const RoleBasedTabs = ({ user, activeTab, setActiveTab }) => {
   , [user]);
 
   return (
-    <nav className="flex" aria-label="Tabs">
+    <nav className="flex rounded-[5px] overflow-hidden border border-gray-200" aria-label="Tabs">
       {visibleTabs.map((tab) => (
         <button
           key={tab.name}
           onClick={() => setActiveTab(tab.name)}
-          className={`px-4 py-2 md:px-6 md:py-3 text-base font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75
+          className={`px-4 py-2 md:px-6 md:py-3 w-full max-w-full text-base font-semibold text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75
             ${
               activeTab === tab.name
-                ? 'bg-indigo-600'
-                : 'bg-indigo-400 hover:bg-indigo-500'
+                ? 'bg-[#553A99]'
+                : 'bg-[#A295C8] hover:bg-indigo-500'
             }
           `}
           
