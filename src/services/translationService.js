@@ -10,7 +10,8 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000 
+  timeout: 10000,
+  withCredentials: true // Important: Include cookies in requests
 });
 
 // Add a request interceptor for debugging
@@ -73,28 +74,44 @@ const translationService = {
     }
   },
 
-  // Generate translation files (REQ-19)
-  generateTranslationFiles: async (projectId, format = 'json') => {
+  // Download translation files 
+  downloadTranslations: async (projectId, format = 'json') => {
     try {
-      console.log(`Generating ${format} translations for project ${projectId}`);
+      console.log(`Downloading ${format} translations for project ${projectId}`);
       const response = await apiClient.get(`/developer/projects/${projectId}/translations/generate`, {
         params: { format },
         responseType: 'blob' // Important for file downloads
       });
       
-      // Create download link
+      // Create download link and trigger download
       const blob = new Blob([response.data], { 
         type: format === 'csv' ? 'text/csv' : 'application/json' 
       });
       
-      return {
-        blob,
-        filename: response.headers['content-disposition'] 
-          ? response.headers['content-disposition'].split('filename=')[1]
-          : `translations.${format}`
-      };
+      // Create download URL and trigger download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Get filename from response headers or create default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `translations.${format}`;
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (matches && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      return { success: true, filename };
     } catch (error) {
-      console.error(`Failed to generate ${format} translations:`, error);
+      console.error(`Failed to download ${format} translations:`, error);
       throw handleApiError(error);
     }
   },
@@ -116,6 +133,25 @@ const translationService = {
       return response.data;
     } catch (error) {
       console.error('Failed to upload translation file:', error);
+      throw handleApiError(error);
+    }
+  },
+
+  // Download translations for a project
+  downloadTranslations: async (projectId, format = 'json') => {
+    try {
+      console.log(`Downloading translations for project ${projectId} in ${format} format`);
+      const response = await apiClient.get(`/developer/projects/${projectId}/download/${format}`, {
+        responseType: 'blob'
+      });
+      
+      const filename = `translations-${projectId}.${format}`;
+      translationService.downloadFile(response.data, filename);
+      
+      console.log('Translation file downloaded successfully');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to download translations:', error);
       throw handleApiError(error);
     }
   },

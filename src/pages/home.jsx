@@ -1,301 +1,460 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+
+// Import styles
+import '../components/Dashboard/Dashboard.css';
+
+// Import utilities
+import { showToast, handleApiError } from '../utils/notifications';
+
+// Import all the new components
+import Sidebar from '../components/Dashboard/Sidebar';
+import Header from '../components/Dashboard/Header';
+import Toolbar from '../components/Dashboard/Toolbar';
+import TranslationTable from '../components/Dashboard/TranslationTable';
+import AddLanguageModal from '../components/Modals/AddLanguageModal';
+import AddTranslationModal from '../components/Modals/AddTranslationModal';
+import EditTranslationModal from '../components/Modals/EditTranslationModal';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
+
+// Import services
 import projectService from '../services/projectService';
 import languageService from '../services/languageService';
+import translationService from '../services/translationService';
 
-const Home = () => {
+const AdminDashboard = () => {
+  // State for modals
+  const [isAddLanguageModalOpen, setAddLanguageModalOpen] = useState(false);
+  const [isAddTranslationModalOpen, setAddTranslationModalOpen] = useState(false);
+  const [isEditTranslationModalOpen, setEditTranslationModalOpen] = useState(false);
+  
+  // State for dropdowns
+  const [isRubixDropdownOpen, setRubixDropdownOpen] = useState(false);
+  const [showAllLanguagesDropdown, setShowAllLanguagesDropdown] = useState(false);
+  
+  // State for data
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [allLanguages, setAllLanguages] = useState([]);
+  const [projectLanguages, setProjectLanguages] = useState([]);
   const [translations, setTranslations] = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-  const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowLanguageDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef]);
+  // Refs for dropdown management
+  const allLanguagesDropdownRef = useRef(null);
 
-  // Fetch projects
+  // Fetch initial data
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const data = await projectService.getProjects();
-        setProjects(data);
-        if (data.length > 0) setSelectedProject(data[0]._id);
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
+    fetchInitialData();
   }, []);
 
-  // Sample translations
+  // Close dropdowns when clicking outside
   useEffect(() => {
-    const sampleTranslations = [
-      { id: 1, key: 'ABOUT', language: 'EN', translation: 'About' },
-      { id: 2, key: 'ABOUT', language: 'AR', translation: 'حول' },
-    ];
-    setTranslations(sampleTranslations);
-  }, [selectedProject]);
+    const handleClickOutside = (event) => {
+      if (allLanguagesDropdownRef.current && !allLanguagesDropdownRef.current.contains(event.target)) {
+        setShowAllLanguagesDropdown(false);
+      }
+    };
 
-  // Fetch available languages
-  const fetchLanguages = async () => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchInitialData = async () => {
     try {
-      const data = await languageService.getLanguages();
-      setLanguages(data);
-      setShowLanguageDropdown(true);
-    } catch (err) {
-      console.error('Error fetching languages:', err);
+      setLoading(true);
+      
+      // Fetch projects and languages from database
+      const [projectsData, languagesData] = await Promise.all([
+        projectService.getProjects(),
+        languageService.getLanguages()
+      ]);
+
+      console.log('Fetched projects:', projectsData);
+      console.log('Fetched languages:', languagesData);
+
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+      setAllLanguages(Array.isArray(languagesData) ? languagesData : []);
+
+      // Select first project by default
+      if (projectsData && projectsData.length > 0) {
+        const firstProject = projectsData[0];
+        setSelectedProject(firstProject);
+        await fetchProjectLanguages(firstProject._id);
+        await fetchTranslations(firstProject._id);
+      }
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      handleApiError(error, 'Failed to load data from server');
+      // Set empty arrays on error to prevent crashes
+      setProjects([]);
+      setAllLanguages([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleProjectChange = (e) => {
-    setSelectedProject(e.target.value);
-  };
-
-  const toggleLanguageSelection = (langCode) => {
-    setSelectedLanguages(prev => {
-      if (prev.includes(langCode)) {
-        return prev.filter(code => code !== langCode);
-      } else {
-        return [...prev, langCode];
-      }
-    });
-  };
-
-  const handleAssignLanguages = async () => {
+  const fetchProjectLanguages = async (projectId) => {
     try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) {
-        setNotification({
-          show: true,
-          message: 'You must be logged in to assign languages',
-          type: 'error'
+      console.log('🔵 Fetching languages for project:', projectId);
+      const projectLanguagesData = await projectService.getProjectLanguages(projectId);
+      console.log('🔵 Received project languages data:', projectLanguagesData);
+      
+      // Handle both array response and object with languages property
+      let languages;
+      if (Array.isArray(projectLanguagesData)) {
+        languages = projectLanguagesData;
+      } else if (projectLanguagesData && projectLanguagesData.languages) {
+        languages = projectLanguagesData.languages;
+      } else {
+        languages = [];
+      }
+      
+      console.log('🔵 Setting project languages:', languages);
+      console.log('🔵 Project languages length:', languages.length);
+      console.log('🔵 Project languages type:', typeof languages, Array.isArray(languages));
+      
+      if (Array.isArray(languages)) {
+        languages.forEach((lang, index) => {
+          console.log(`Language ${index}:`, lang);
         });
+      }
+      
+      setProjectLanguages(languages);
+    } catch (error) {
+      console.error('❌ Error fetching project languages:', error);
+      setProjectLanguages([]);
+    }
+  };
+
+  const fetchTranslations = async (projectId) => {
+    try {
+      console.log('Fetching translations for project:', projectId);
+      // Fetch translations for the selected project from database
+      const translationsData = await translationService.getTranslations({ 
+        projectId: projectId 
+      });
+      console.log('Fetched translations:', translationsData);
+      setTranslations(Array.isArray(translationsData) ? translationsData : []);
+    } catch (error) {
+      console.error('Error fetching translations:', error);
+      setTranslations([]);
+    }
+  };
+
+  const handleProjectSelect = async (project) => {
+    console.log('🔵 Project selected:', project.name, 'ID:', project._id);
+    setSelectedProject(project);
+    setRubixDropdownOpen(false);
+    
+    // Fetch data for the newly selected project
+    await Promise.all([
+      fetchProjectLanguages(project._id),
+      fetchTranslations(project._id)
+    ]);
+  };
+
+  const handleLanguageAssign = async (languageIds) => {
+    if (!selectedProject) {
+      showToast('Please select a project first', 'warning');
+      return;
+    }
+    
+    try {
+      // Handle both single ID and array of IDs
+      const idsArray = Array.isArray(languageIds) ? languageIds : [languageIds];
+      
+      // Check for already assigned languages
+      const assignedLanguageIds = projectLanguages.map(lang => lang._id);
+      const alreadyAssigned = idsArray.filter(id => assignedLanguageIds.includes(id));
+      
+      if (alreadyAssigned.length > 0) {
+        const assignedLanguageNames = allLanguages
+          .filter(lang => alreadyAssigned.includes(lang._id))
+          .map(lang => lang.name);
+        
+        if (alreadyAssigned.length === idsArray.length) {
+          showToast(`Language${idsArray.length > 1 ? 's' : ''} already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
+          return;
+        } else {
+          showToast(`Some languages already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
+        }
+      }
+      
+      // Only assign new languages
+      const newLanguageIds = idsArray.filter(id => !assignedLanguageIds.includes(id));
+      
+      if (newLanguageIds.length > 0) {
+        await projectService.assignLanguagesToProject(selectedProject._id, newLanguageIds);
+        
+        // Refresh project languages to update display immediately
+        await fetchProjectLanguages(selectedProject._id);
+        
+        const message = newLanguageIds.length === 1 
+          ? 'Language assigned successfully!' 
+          : `${newLanguageIds.length} languages assigned successfully!`;
+        showToast(message, 'success');
+      }
+      
+      setAddLanguageModalOpen(false);
+    } catch (error) {
+      console.error('Error assigning language:', error);
+      handleApiError(error, 'Failed to assign language(s)');
+    }
+  };
+
+  const handleQuickLanguageAssign = async (languageId) => {
+    if (!selectedProject) {
+      showToast('Please select a project first', 'warning');
+      return;
+    }
+
+    try {
+      // Check if language is already assigned
+      const isAlreadyAssigned = projectLanguages.some(lang => lang._id === languageId);
+      if (isAlreadyAssigned) {
+        const language = allLanguages.find(lang => lang._id === languageId);
+        showToast(`${language?.name || 'Language'} is already assigned to this project`, 'warning');
         return;
       }
 
-      await languageService.assignLanguagesToUser(userId, selectedLanguages);
+      await projectService.assignLanguagesToProject(selectedProject._id, [languageId]);
       
-      setNotification({
-        show: true,
-        message: 'Languages assigned successfully!',
-        type: 'success'
-      });
+      // Refresh project languages to update display immediately
+      await fetchProjectLanguages(selectedProject._id);
       
-      setShowLanguageDropdown(false);
-      
-      // Hide notification after 3 seconds
-      setTimeout(() => {
-        setNotification({ show: false, message: '', type: '' });
-      }, 3000);
+      const language = allLanguages.find(lang => lang._id === languageId);
+      showToast(`${language?.name || 'Language'} assigned successfully!`, 'success');
     } catch (error) {
-      console.error('Error assigning languages:', error);
-      setNotification({
-        show: true,
-        message: 'Failed to assign languages. Please try again.',
-        type: 'error'
-      });
+      console.error('Error assigning language:', error);
+      handleApiError(error, 'Failed to assign language');
     }
   };
 
-  const handleCancelSelection = () => {
-    setSelectedLanguages([]);
-    setShowLanguageDropdown(false);
+  const handleDownload = async (format = 'json') => {
+    if (!selectedProject) {
+      showToast('Please select a project first.', 'warning');
+      return;
+    }
+    
+    try {
+      await translationService.downloadTranslations(selectedProject._id, format);
+      showToast(`Translations downloaded in ${format.toUpperCase()} format`, 'success');
+    } catch (error) {
+      handleApiError(error, 'Failed to download translations');
+    }
   };
 
+  const handleRefresh = async () => {
+    if (selectedProject) {
+      await Promise.all([
+        fetchProjectLanguages(selectedProject._id),
+        fetchTranslations(selectedProject._id)
+      ]);
+      showToast('Data refreshed successfully', 'success');
+    }
+  };
+
+  // Helper functions for language management
+  const getAvailableLanguages = () => {
+    const assignedLanguageIds = projectLanguages.map(lang => lang._id);
+    return allLanguages.filter(lang => !assignedLanguageIds.includes(lang._id));
+  };
+
+  const getAssignedLanguageObjects = () => {
+    return projectLanguages || [];
+  };
+
+  const isAnyModalOpen = isAddLanguageModalOpen || isAddTranslationModalOpen || isEditTranslationModalOpen;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-brand-bg-light">
+        <Sidebar />
+        <main className="flex-grow bg-brand-bg-main">
+          <LoadingSpinner size="large" text="Loading dashboard data..." />
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gradient-to-br from-[#f9fafb] to-[#e9f5f9] min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-sm border border-[#e3f2fd]">
-        <h1 className="text-xl font-bold text-[#164481]">GTN Portal</h1>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex">
-            <select
-              className="border border-[#76b0e3] rounded-l px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#178aaa] text-[#202b3b]"
-              value={selectedProject}
-              onChange={handleProjectChange}
-            >
-              {projects.map(project => (
-                <option key={project._id} value={project._id}>
-                  {project.name}
-                </option>
-              ))}
-              {projects.length === 0 && <option value="">No projects</option>}
-            </select>
-
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="border border-[#76b0e3] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#178aaa] w-40 text-[#202b3b]"
-              />
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-[#58738c]">
-                Keys | Words
-              </span>
-            </div>
-          </div>
-
-          <div className="relative" ref={dropdownRef}>
-            <div className="flex items-center">
-              <button
-                className="bg-[#164481] hover:bg-[#10325c] text-white px-3 py-1.5 rounded flex items-center transition-colors shadow-sm"
-                onClick={fetchLanguages}
-              >
-                <span className="mr-1">+</span> Assign New Language
-              </button>
-
-              {showLanguageDropdown && selectedLanguages.length > 0 && (
-                <div className="flex ml-2">
-                  <button
-                    className="px-3 py-1.5 bg-[#ca4c4c] hover:bg-[#b33c3c] text-white rounded-l transition-colors shadow-sm"
-                    onClick={handleCancelSelection}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-3 py-1.5 bg-[#178c78] hover:bg-[#0f7361] text-white rounded-r transition-colors shadow-sm"
-                    onClick={handleAssignLanguages}
-                  >
-                    Assign
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {showLanguageDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-[#76b0e3] rounded-lg shadow-lg z-10 max-h-72 overflow-y-auto">
-                <div className="p-2">
-                  <h3 className="font-medium text-[#164481] mb-2 border-b border-[#e3f2fd] pb-1">Select Languages</h3>
-                  
-                  {languages.length === 0 ? (
-                    <p className="text-[#58738c] py-2">No languages available</p>
-                  ) : (
-                    <div className="space-y-1">
-                      {languages.map((lang) => (
-                        <div 
-                          key={lang._id}
-                          className={`flex items-center p-2 hover:bg-[#f0f8ff] rounded cursor-pointer transition-colors ${
-                            selectedLanguages.includes(lang.code) ? 'bg-[#e3f2fd]' : ''
-                          }`}
-                          onClick={() => toggleLanguageSelection(lang.code)}
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 text-[#178aaa] focus:ring-[#76b0e3] border-[#76b0e3] rounded"
-                            checked={selectedLanguages.includes(lang.code)}
-                            onChange={() => {}}
-                          />
-                          <label className="ml-2 block text-sm text-[#202b3b]">
-                            <span className="font-medium">{lang.name}</span>
-                            <span className="text-[#58738c] ml-1">({lang.code})</span>
-                          </label>
-                        </div>
-                      ))}
+    <>
+      <div className={`flex min-h-screen bg-brand-bg-light ${isAnyModalOpen ? 'blur-sm' : ''}`}>
+        <Sidebar />
+        <main className="flex-grow p-5 bg-brand-bg-main">
+          <Header
+            isRubixDropdownOpen={isRubixDropdownOpen}
+            onRubixDropdownToggle={() => setRubixDropdownOpen(!isRubixDropdownOpen)}
+            selectedRubixProduct={selectedProject?.name || 'Select Project'}
+            rubixOptions={projects}
+            onRubixProductSelect={handleProjectSelect}
+            onAssignLanguageClick={() => setAddLanguageModalOpen(true)}
+          />
+          
+          {/* Enhanced Toolbar with Language Management */}
+          <div className="mb-6">
+            <Toolbar 
+              onAddNewTranslationClick={() => setAddTranslationModalOpen(true)}
+              projectLanguages={projectLanguages}
+              onDownload={handleDownload}
+              onRefresh={handleRefresh}
+            />
+            
+            {/* Quick Language Management Section */}
+            {selectedProject && (
+              <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {/* Quick Assign Languages */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Quick Assign:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {getAvailableLanguages().slice(0, 3).map(language => (
+                          <button
+                            key={language._id}
+                            onClick={() => handleQuickLanguageAssign(language._id)}
+                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+                          >
+                            + {language.name}
+                          </button>
+                        ))}
+                        {getAvailableLanguages().length > 3 && (
+                          <button
+                            onClick={() => setAddLanguageModalOpen(true)}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                          >
+                            +{getAvailableLanguages().length - 3} more
+                          </button>
+                        )}
+                        {getAvailableLanguages().length === 0 && (
+                          <span className="text-xs text-gray-500 italic">All languages assigned</span>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Assigned Languages Dropdown */}
+                  <div className="relative" ref={allLanguagesDropdownRef}>
+                    <button
+                      onClick={() => setShowAllLanguagesDropdown(!showAllLanguagesDropdown)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span>Languages ({getAssignedLanguageObjects().length})</span>
+                      <svg className={`w-4 h-4 transition-transform ${showAllLanguagesDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {showAllLanguagesDropdown && (
+                      <div className="absolute right-0 z-10 mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <div className="p-3 border-b border-gray-200 bg-gray-50">
+                          <div className="text-sm font-medium text-gray-700">Languages in {selectedProject.name}</div>
+                          <div className="text-xs text-gray-500">{getAssignedLanguageObjects().length} languages assigned</div>
+                        </div>
+                        
+                        {getAssignedLanguageObjects().length === 0 ? (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                            No languages assigned yet
+                            <br />
+                            <button 
+                              onClick={() => {
+                                setShowAllLanguagesDropdown(false);
+                                setAddLanguageModalOpen(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 underline mt-1"
+                            >
+                              Assign languages
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="max-h-48 overflow-y-auto">
+                            {getAssignedLanguageObjects().map(language => (
+                              <div
+                                key={language._id}
+                                className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-900">{language.name}</div>
+                                    <div className="text-sm text-gray-500">Code: {language.code}</div>
+                                  </div>
+                                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {getAssignedLanguageObjects().length > 0 && getAvailableLanguages().length > 0 && (
+                          <div className="p-3 border-t border-gray-200">
+                            <button
+                              onClick={() => {
+                                setShowAllLanguagesDropdown(false);
+                                setAddLanguageModalOpen(true);
+                              }}
+                              className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                            >
+                              + Add more languages
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Project Info Summary */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Project:</span>
+                      <span className="ml-2 font-medium text-gray-900">{selectedProject.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Languages:</span>
+                      <span className="ml-2 font-medium text-gray-900">{getAssignedLanguageObjects().length} assigned</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Translations:</span>
+                      <span className="ml-2 font-medium text-gray-900">{translations.length} entries</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
-        </div>
+
+          <TranslationTable 
+            translations={translations}
+            onEditClick={() => setEditTranslationModalOpen(true)}
+          />
+        </main>
       </div>
 
-      {/* Notification */}
-      {notification.show && (
-        <div className={`mb-6 p-3 rounded-md shadow-sm ${
-          notification.type === 'success' 
-            ? 'bg-[#e3f8f5] text-[#0f7361] border-l-4 border-[#178c78]' 
-            : 'bg-[#fde8e8] text-[#b33c3c] border-l-4 border-[#ca4c4c]'
-        }`}>
-          {notification.message}
-        </div>
-      )}
-
-      {/* Display user's languages if they exist */}
-      {selectedLanguages.length > 0 && (
-        <div className="mb-6 bg-white rounded-lg shadow-sm p-4 border border-[#e3f2fd]">
-          <h2 className="text-lg font-semibold text-[#164481] mb-3">Selected Languages</h2>
-          <div className="flex flex-wrap gap-2">
-            {selectedLanguages.map(langCode => {
-              const lang = languages.find(l => l.code === langCode);
-              return (
-                <div key={langCode} className="bg-[#e3f2fd] text-[#164481] px-3 py-1 rounded-full text-sm font-medium flex items-center shadow-sm">
-                  {lang ? lang.name : langCode}
-                  <button 
-                    onClick={() => toggleLanguageSelection(langCode)}
-                    className="ml-1 text-[#178aaa] hover:text-[#10708c] focus:outline-none"
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Main content area - can be expanded with more sections */}
-      <div className="bg-white rounded-lg shadow-sm p-4 border border-[#e3f2fd]">
-        <h2 className="text-lg font-semibold text-[#164481] mb-4">Translation Dashboard</h2>
-        
-        {loading ? (
-          <div className="flex justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#178aaa]"></div>
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-8 text-[#58738c]">
-            <p>No projects found. Create a new project to get started.</p>
-            <button className="mt-4 px-4 py-2 bg-[#178aaa] hover:bg-[#10708c] text-white rounded">
-              Create Project
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-[#e3f2fd]">
-            <table className="min-w-full divide-y divide-[#e3f2fd]">
-              <thead className="bg-[#f0f8ff]">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#58738c] uppercase tracking-wider">
-                    Key
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#58738c] uppercase tracking-wider">
-                    Language
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#58738c] uppercase tracking-wider">
-                    Translation
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-[#e3f2fd]">
-                {translations.map((translation) => (
-                  <tr key={`${translation.id}-${translation.language}`} className="hover:bg-[#f9fafb]">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#202b3b]">{translation.key}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#58738c]">{translation.language}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#202b3b]">{translation.translation}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Render Modals Conditionally */}
+      <AddLanguageModal 
+        isOpen={isAddLanguageModalOpen} 
+        onClose={() => setAddLanguageModalOpen(false)}
+        allLanguages={allLanguages}
+        projectLanguages={projectLanguages}
+        selectedProject={selectedProject}
+        onLanguageAssign={handleLanguageAssign}
+      />
+      <AddTranslationModal 
+        isOpen={isAddTranslationModalOpen} 
+        onClose={() => setAddTranslationModalOpen(false)} 
+        selectedProject={selectedProject}
+        projectLanguages={projectLanguages}
+      />
+      <EditTranslationModal 
+        isOpen={isEditTranslationModalOpen} 
+        onClose={() => setEditTranslationModalOpen(false)} 
+      />
+    </>
   );
 };
 
-export default Home;
+export default AdminDashboard;

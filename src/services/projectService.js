@@ -10,7 +10,8 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000 
+  timeout: 10000,
+  withCredentials: true // Important: Include cookies in requests
 });
 
 // Add a request interceptor for debugging
@@ -106,15 +107,30 @@ const projectService = {
     }
   },
   
-  // Assign languages to a project
-  assignLanguagesToProject: async (id, languages) => {
+  // Assign multiple languages to a project
+  assignLanguagesToProject: async (projectId, languageIds) => {
     try {
-      console.log(`Assigning languages to project ${id}:`, languages);
-      const response = await apiClient.post(`/projects/${id}/languages`, { languages });
+      console.log(`Assigning ${languageIds.length} languages to project ${projectId}:`, languageIds);
+      const response = await apiClient.post(`/projects/${projectId}/languages`, {
+        languages: languageIds
+      });
       console.log('Languages assigned successfully:', response.data);
       return response.data;
     } catch (error) {
-      console.error(`Failed to assign languages to project ${id}:`, error);
+      console.error(`Failed to assign languages to project ${projectId}:`, error);
+      throw handleApiError(error);
+    }
+  },
+
+  // Get languages assigned to a project
+  getProjectLanguages: async (id) => {
+    try {
+      console.log('🟡 Making API call to get languages for project:', id);
+      const response = await apiClient.get(`/projects/${id}/languages`);
+      console.log('🟡 API response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`❌ Failed to fetch languages for project ${id}:`, error);
       throw handleApiError(error);
     }
   }

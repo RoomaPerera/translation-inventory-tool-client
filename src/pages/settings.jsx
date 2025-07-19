@@ -6,6 +6,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import AddProject from '../components/AddProject';
 import ProjectForm from '../components/ProjectForm';
 import LanguageForm from '../components/LanguageForm';
+import DebugPanel from '../components/DebugPanel';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('projects'); // Toggle between 'projects', 'languages', and 'quick-actions'
@@ -44,10 +45,14 @@ const Settings = () => {
     const fetchLanguages = async () => {
       setIsLoadingLanguages(true);
       try {
+        console.log('Fetching languages...');
         const languagesData = await languageService.getLanguages();
+        console.log('Languages fetched successfully:', languagesData);
         setLanguages(languagesData);
       } catch (error) {
         console.error('Failed to fetch languages:', error);
+        // Show more detailed error information
+        alert(`Failed to fetch languages: ${error.message || 'Unknown error'}`);
       } finally {
         setIsLoadingLanguages(false);
       }
@@ -61,10 +66,14 @@ const Settings = () => {
     const fetchProjects = async () => {
       setIsLoadingProjects(true);
       try {
+        console.log('Fetching projects...');
         const projectsData = await projectService.getProjects();
+        console.log('Projects fetched successfully:', projectsData);
         setProjects(projectsData);
       } catch (error) {
         console.error('Failed to fetch projects:', error);
+        // Show more detailed error information
+        alert(`Failed to fetch projects: ${error.message || 'Unknown error'}`);
       } finally {
         setIsLoadingProjects(false);
       }
@@ -110,6 +119,9 @@ const Settings = () => {
 
   return (
     <div className="max-w-full">
+      {/* Debug Panel - Remove this after debugging */}
+      <DebugPanel />
+      
       <div className="transition-all duration-300">
         <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
         

@@ -10,8 +10,36 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000 
+  timeout: 10000,
+  withCredentials: true // Important: Include cookies in requests
 });
+
+// Add a request interceptor for debugging
+apiClient.interceptors.request.use(
+  config => {
+    console.log(`Making ${config.method.toUpperCase()} request to: ${config.baseURL}${config.url}`);
+    if (config.data) {
+      console.log('Request payload:', config.data);
+    }
+    return config;
+  },
+  error => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor for debugging
+apiClient.interceptors.response.use(
+  response => {
+    console.log(`Response from ${response.config.url}:`, response.status, response.data);
+    return response;
+  },
+  error => {
+    console.error('Response error:', error.response?.status, error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
 
 // Language-related API services
 const languageService = {
