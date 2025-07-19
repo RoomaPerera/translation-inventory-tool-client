@@ -1,29 +1,36 @@
-import { createContext, useReducer, useEffect } from 'react';
+import { createContext, useReducer, useEffect, useContext } from "react";
 
 export const AuthContext = createContext();
 
 const authReducer = (state, action) => {
-    switch (action.type) {
-        case 'LOGIN':
-            return { user: action.payload };
-        case 'LOGOUT':
-            return { user: null };
-        default:
-            return state;
-    }
+  switch (action.type) {
+    case "LOGIN":
+      return { user: action.payload };
+    case "LOGOUT":
+      return { user: null };
+    default:
+      return state;
+  }
 };
 
 export const AuthContextProvider = ({ children }) => {
-    const [state, dispatch] = useReducer(authReducer, { user: null });
+  const [state, dispatch] = useReducer(authReducer, { user: null });
 
-    useEffect(() => {
-        const stored = localStorage.getItem('user');
-        if (stored) dispatch({ type: 'LOGIN', payload: JSON.parse(stored) });
-    }, []);
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) dispatch({ type: "LOGIN", payload: JSON.parse(stored) });
+  }, []);
 
-    return (
-        <AuthContext.Provider value={{ ...state, dispatch }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ ...state, dispatch }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuthContext = () => {
+  const context = useContext(AuthContext);
+  if (!context)
+    throw new Error("useAuthContext must be used inside AuthContextProvider");
+  return context;
 };
