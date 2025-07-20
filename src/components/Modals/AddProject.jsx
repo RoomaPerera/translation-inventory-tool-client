@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import projectService from '../services/projectService'; // To interact with the project API
+import projectService from '../../services/projectService'; // To interact with the project API
 
 const AddProject = ({ onSuccess, availableLanguages = [] }) => {
   const navigate = useNavigate();

@@ -8,8 +8,9 @@ import HomePage from './pages/HomePage';
 // import ProjectLanguageManager from './pages/ProjectLanguageManager';
 import { useAuthContext } from './hooks/useAuthContext';
 import Projects from './pages/projects';
-
-
+import ProjectForm from './components/Modals/EditProjectForm';
+import LanguageForm from './components/LanguageForm';
+import Settings from './pages/settings';
 
 function PrivateRoute({ children }) {
     const { user } = useAuthContext();
@@ -26,6 +27,9 @@ function AppLayout() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/add" element={<ProjectForm />} />
+                <Route path="/languages/add" element={<LanguageForm />} />
+                <Route path="/settings" element={<Settings />} />
                 {/* Add more routes as needed */}
             </Routes>
         </>

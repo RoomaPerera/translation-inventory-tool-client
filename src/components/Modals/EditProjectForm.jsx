@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuthContext } from '../../hooks/useAuthContext';
 import projectService from '../../services/projectService';
 
-const ProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) => {
+const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) => {
   const { user } = useAuthContext();
   const [formData, setFormData] = useState({
     name: project?.name || '',
@@ -268,4 +268,4 @@ const ProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) => {
   );
 };
 
-export default ProjectForm;
+export default EditProjectForm;

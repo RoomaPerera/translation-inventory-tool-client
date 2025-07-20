@@ -10,8 +10,6 @@ const navLinks = [
   { name: 'Settings', to: '/settings', roles: ['Administrator', 'Developer', 'Translator'] },
 ];
 
-
-
 export const NavBar = (props) => {
   const location = useLocation();
   const navigate = useNavigate();

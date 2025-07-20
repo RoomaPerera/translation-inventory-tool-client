@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import projectService from '../services/projectService';
 import languageService from '../services/languageService';
 import { useAuthContext } from '../hooks/useAuthContext';
-import AddProject from '../components/AddProject';
-import ProjectForm from '../components/Modals/ProjectForm';
+import AddProject from '../components/Modals/AddProject';
+import EditProjectForm from '../components/Modals/EditProjectForm';
 import LanguageForm from '../components/LanguageForm';
 import DebugPanel from '../components/DebugPanel';
 
@@ -531,7 +531,7 @@ const Settings = () => {
               )}
               
               {showEditForm && selectedProject && (
-                <ProjectForm 
+                <EditProjectForm 
                   project={selectedProject}
                   onSuccess={() => {
                     setShowEditForm(false);
