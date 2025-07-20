@@ -11,6 +11,7 @@ import Projects from './pages/projects';
 import ProjectForm from './components/Modals/EditProjectForm';
 import LanguageForm from './components/LanguageForm';
 import Settings from './pages/settings';
+import EditProjectForm from './components/Modals/EditProjectForm';
 
 function PrivateRoute({ children }) {
     const { user } = useAuthContext();
@@ -30,7 +31,7 @@ function AppLayout() {
                 <Route path="/projects/add" element={<ProjectForm />} />
                 <Route path="/languages/add" element={<LanguageForm />} />
                 <Route path="/settings" element={<Settings />} />
-                {/* Add more routes as needed */}
+                <Route path="/settings/projects/edit/:id" element={<EditProjectForm />} />
             </Routes>
         </>
     );
