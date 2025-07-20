@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContextProvider } from './context/AuthContext';
-import Navbar from './components/navBar';
+import Navbar from './components/reusableComponents/navBar';
 import Login from './pages/login';
 import Register from './pages/register';
 import HomePage from './pages/HomePage';
@@ -32,6 +32,7 @@ function AppLayout() {
                 <Route path="/languages/add" element={<LanguageForm />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/projects/edit/:id" element={<EditProjectForm />} />
+                <Route path="/navbar" element={<Navbar user={user} />} />
             </Routes>
         </>
     );
