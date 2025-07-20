@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAuthContext } from '../hooks/useAuthContext';
-import projectService from '../services/projectService';
+import { useAuthContext } from '../../hooks/useAuthContext';
+import projectService from '../../services/projectService';
 
 const ProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) => {
   const { user } = useAuthContext();

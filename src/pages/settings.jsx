@@ -4,7 +4,7 @@ import projectService from '../services/projectService';
 import languageService from '../services/languageService';
 import { useAuthContext } from '../hooks/useAuthContext';
 import AddProject from '../components/AddProject';
-import ProjectForm from '../components/ProjectForm';
+import ProjectForm from '../components/Modals/ProjectForm';
 import LanguageForm from '../components/LanguageForm';
 import DebugPanel from '../components/DebugPanel';
 

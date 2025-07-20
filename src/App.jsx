@@ -7,6 +7,8 @@ import Register from './pages/register';
 import HomePage from './pages/HomePage';
 // import ProjectLanguageManager from './pages/ProjectLanguageManager';
 import { useAuthContext } from './hooks/useAuthContext';
+import Projects from './pages/projects';
+
 
 
 function PrivateRoute({ children }) {
@@ -23,6 +25,8 @@ function AppLayout() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+                <Route path="/projects" element={<Projects />} />
+                {/* Add more routes as needed */}
             </Routes>
         </>
     );
