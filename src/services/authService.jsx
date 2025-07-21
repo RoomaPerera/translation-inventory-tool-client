@@ -1,38 +1,41 @@
-import axios from 'axios';
-import { API_BASE } from '../config/env'; // Assuming you create this file on the frontend as well
+import API from './axiosInstance';
 
-const AUTH_API_URL = `${API_BASE}/api/auth`;
+// Register a new user (self-registration, pending approval)
+export const registerUser = (userData) =>
+    API.post('/auth/register', userData);
 
-// This function will be called by the useLogin hook
-const login = async (email, password) => {
-    // Axios automatically handles non-2xx responses as errors, simplifying the hook
-    const response = await axios.post(`${AUTH_API_URL}/login`, { email, password });
-    return response.data; // The hook will receive the user data
-};
+// Login a user (returns     cookie with JWT)
+export const loginUser = (credentials) =>
+    API.post('/auth/login', credentials);
 
-// This function will be called by the useRegister hook
-const register = async (userName, email, password, role, languages) => {
-    const response = await axios.post(`${AUTH_API_URL}/register`, {
-        userName,
-        email,
-        password,
-        role,
-        languages,
-    });
-    return response.data;
-};
+// Logout the currently logged-in user
+export const logoutUser = () =>
+    API.get('/auth/logout');
 
-// This function will be called from the Sidebar
-const logout = async () => {
-    // The backend route is GET /api/auth/logout
-    const response = await axios.get(`${AUTH_API_URL}/logout`);
-    return response.data;
-};
+// Request a password reset email (forgot password)
+export const resetPassword = (email) =>
+    API.post('/auth/resetPassword', { email });
+
+// Set a new password via reset link
+export const setNewPassword = (data) =>
+    API.post('/auth/setNewPassword', data);
+
+// Change password for logged-in user
+export const changePassword = (data) =>
+    API.post('/auth/changePassword', data);
+
+// Get list of all available languages (for registration)
+export const getLanguages = () =>
+    API.get('/auth/getLanguages').then(res => res.data.languages);
 
 const authService = {
-    login,
-    register,
-    logout,
+    registerUser,
+    loginUser,
+    logoutUser,
+    resetPassword,
+    setNewPassword,
+    changePassword,
+    getLanguages
 };
 
 export default authService;
