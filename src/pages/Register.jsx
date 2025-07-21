@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useRegister } from "../hooks/useRegister";
 import { useNavigate } from "react-router-dom";
 import { useLanguages } from "../hooks/useLanguages";
-import { Input } from "../components/UserModuleComponents/RegisterLoginComponents/Input";
+import { Input } from "../components/RegisterLoginComponents/Input";
 import { Select } from "../components/reusableComponents/Select";
 import Button from "../components/reusableComponents/Button";
 import GTNLogo from "../assets/images/gtn-logo.png"

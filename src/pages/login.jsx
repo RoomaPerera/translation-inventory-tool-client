@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
-import { Input } from "../components/UserModuleComponents/RegisterLoginComponents/Input";
+import { Input } from "../components/RegisterLoginComponents/Input";
 import Button from "../components/reusableComponents/Button";
 import GTNLogo from "../assets/images/gtn-logo.png"
 

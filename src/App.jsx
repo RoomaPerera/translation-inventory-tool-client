@@ -10,7 +10,7 @@ import Home from './pages/Home';
 import AllEntries from './pages/AllEntries';
 import ActivityLog from './pages/ActivityLog';
 import Settings from './pages/Settings';
-import Login from './pages/Login';
+import Login from './pages/login';
 import Register from './pages/Register';
 
 function App() {
