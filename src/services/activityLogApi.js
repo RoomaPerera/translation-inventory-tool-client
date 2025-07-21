@@ -1,5 +1,16 @@
 import { API_BASE } from '../config/env';
 
+// Helper to check if JWT token is expired
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 // Test function to check backend connectivity
 export const testBackendConnection = async () => {
   try {
@@ -20,10 +31,22 @@ export const fetchActivityLogs = async (filters = {}) => {
   try {
     const user = localStorage.getItem('user');
     if (!user) {
+      console.error('[fetchActivityLogs] No user in localStorage');
       throw new Error('User not authenticated');
     }
 
     const userData = JSON.parse(user);
+    if (!userData.token) {
+      console.error('[fetchActivityLogs] No token in user object:', userData);
+      throw new Error('User token missing. Please log in again.');
+    }
+    // Log the token being sent
+    console.log('[fetchActivityLogs] Sending token:', userData.token);
+    if (isTokenExpired(userData.token)) {
+      localStorage.removeItem('user');
+      throw new Error('Session expired. Please log in again.');
+    }
+
     const params = new URLSearchParams();
     
     if (filters.startDate) params.append('startDate', filters.startDate);
@@ -62,10 +85,22 @@ export const addActivityLog = async (logData) => {
   try {
     const user = localStorage.getItem('user');
     if (!user) {
+      console.error('[addActivityLog] No user in localStorage');
       throw new Error('User not authenticated');
     }
 
     const userData = JSON.parse(user);
+    if (!userData.token) {
+      console.error('[addActivityLog] No token in user object:', userData);
+      throw new Error('User token missing. Please log in again.');
+    }
+    // Log the token being sent
+    console.log('[addActivityLog] Sending token:', userData.token);
+    if (isTokenExpired(userData.token)) {
+      localStorage.removeItem('user');
+      throw new Error('Session expired. Please log in again.');
+    }
+
     const response = await fetch(`${API_BASE}/api/activitylogs`, {
       method: 'POST',
       headers: { 

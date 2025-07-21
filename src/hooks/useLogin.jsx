@@ -22,7 +22,11 @@ export const useLogin = () => {
         setIsLoading(false);
         return false;
       }
+      // Always save the latest token from backend response to localStorage
+      // This ensures Authorization header uses the freshest token for all API calls
       localStorage.setItem("user", JSON.stringify(json));
+      // Log the user object being saved
+      console.log("[useLogin] Saved user to localStorage:", json);
       dispatch({ type: "LOGIN", payload: json });
       setIsLoading(false);
       return true;
