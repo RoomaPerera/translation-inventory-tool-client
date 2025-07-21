@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthContext } from './useAuthContext';
-import { API_BASE } from '../config/env';
+import authService from '../services/authService'; // Import the service
 
 export const useLogin = () => {
     const [error, setError] = useState(null);
@@ -8,28 +8,27 @@ export const useLogin = () => {
     const { dispatch } = useAuthContext();
 
     const login = async (email, password) => {
-        setIsLoading(true); setError(null);
+        setIsLoading(true);
+        setError(null);
+
         try {
-            const res = await fetch(`${API_BASE}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email, password })
-            });
-            const json = await res.json();
-            if (!res.ok) {
-                setError(json.error || 'Login failed');
-                setIsLoading(false);
-                return false;
-            }
-            localStorage.setItem('user', JSON.stringify(json));
-            dispatch({ type: 'LOGIN', payload: json });
+            // Call the service instead of using fetch directly
+            const user = await authService.login(email, password);
+            
+            // Save user to local storage
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            // Dispatch login action
+            dispatch({ type: 'LOGIN', payload: user });
+            
             setIsLoading(false);
-            return true;
-        } catch {
-            setError('Network error');
+            return true; // Signal success to the component
+
+        } catch (err) {
+            // Axios places the server's error message in err.response.data
+            setError(err.response?.data?.error || 'Login failed. Please try again.');
             setIsLoading(false);
-            return false;
+            return false; // Signal failure
         }
     };
 

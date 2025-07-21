@@ -1,0 +1,72 @@
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaHome, FaList, FaClock, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import gtnLogo from '../assets/images/gtn-logo.png';
+import { useAuthContext } from '../hooks/useAuthContext';
+import authService from '../services/authService'; // Import the service
+
+const Sidebar = () => {
+  const { user, dispatch } = useAuthContext();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Call the logout service to clear the backend cookie
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout failed on server, proceeding with client-side cleanup.", error);
+    } finally {
+      // Always perform client-side cleanup
+      localStorage.removeItem('user');
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login'); // Redirect to login page
+    }
+  };
+
+  return (
+    <aside className="w-64 bg-gradient-to-b from-brand-purple-dark to-brand-cyan text-white flex flex-col p-5 shrink-0">
+      <div className="flex items-center mb-8">
+        <img src={gtnLogo} alt="GTN Logo" className="w-12 h-12 mr-4" />
+        <h1 className="text-2xl font-bold">GTN</h1>
+      </div>
+
+      <nav className="flex-grow">
+        <ul>
+          <li className="mb-4">
+            <Link to="/" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+              <FaHome /> Home
+            </Link>
+          </li>
+          <li className="mb-4">
+            <Link to="/all-entries" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+              <FaList /> All Entries
+            </Link>
+          </li>
+          <li className="mb-4">
+            <Link to="/activity-log" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+              <FaClock /> Activity Log
+            </Link>
+          </li>
+          <li>
+            <Link to="/settings" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+              <FaCog /> Settings
+            </Link>
+          </li>
+        </ul>
+      </nav>
+
+      <div className="mt-auto border-t border-gray-500/50 pt-5">
+        <p className="font-bold mb-1">{user ? user.userName : 'Guest User'}</p>
+        <p className="text-sm text-brand-purple-light mb-4 capitalize">{user ? user.role : 'No Role'}</p>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 p-2.5 bg-white/10 text-white rounded-lg cursor-pointer transition-colors hover:bg-brand-hover-light"
+        >
+          <FaSignOutAlt /> Log out
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;
