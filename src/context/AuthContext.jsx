@@ -18,8 +18,18 @@ export const AuthContextProvider = ({ children }) => {
 
     useEffect(() => {
         const stored = localStorage.getItem('user');
-        if (stored) dispatch({ type: 'LOGIN', payload: JSON.parse(stored) });
+        if (stored) {
+            try {
+                const user = JSON.parse(stored);
+                dispatch({ type: 'LOGIN', payload: user });
+            } catch (error) {
+                console.error("Failed to parse user from localStorage", error);
+                localStorage.removeItem('user');
+            }
+        }
     }, []);
+
+    console.log('AuthContext state: ', state)
 
     return (
         <AuthContext.Provider value={{ ...state, dispatch }}>
