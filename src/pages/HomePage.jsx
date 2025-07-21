@@ -60,6 +60,15 @@ const AdminDashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Monitor projectLanguages changes for debugging
+  useEffect(() => {
+    console.log('🔄 ProjectLanguages state updated:', projectLanguages);
+    console.log('🔄 Current assigned languages count:', projectLanguages?.length || 0);
+    if (projectLanguages && projectLanguages.length > 0) {
+      console.log('🔄 Assigned language names:', projectLanguages.map(lang => lang.name).join(', '));
+    }
+  }, [projectLanguages]);
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -154,149 +163,240 @@ const AdminDashboard = () => {
     ]);
   };
 
-  // ENHANCED: Language assignment handler with real-time updates
-  const handleLanguageAssign = async (languageIds) => {
-    if (!selectedProject) {
-      showToast('Please select a project first', 'warning');
-      return;
-    }
+
+// UPDATED: Language assignment handler - now sends language CODES instead of IDs
+const handleLanguageAssign = async (languageIds) => {
+  if (!selectedProject) {
+    showToast('Please select a project first', 'warning');
+    return;
+  }
+  
+  try {
+    console.log('🟡 Starting language assignment...');
+    console.log('Selected project:', selectedProject);
+    console.log('Language IDs received from modal:', languageIds);
     
-    try {
-      console.log('🟡 Starting language assignment...');
-      console.log('Selected project:', selectedProject);
-      console.log('Language IDs to assign:', languageIds);
-      
-      // Handle both single ID and array of IDs
-      const idsArray = Array.isArray(languageIds) ? languageIds : [languageIds];
-      
-      // Check for already assigned languages
-      const assignedLanguageIds = projectLanguages.map(lang => lang._id);
-      console.log('Currently assigned language IDs:', assignedLanguageIds);
-      
-      const alreadyAssigned = idsArray.filter(id => assignedLanguageIds.includes(id));
-      
-      if (alreadyAssigned.length > 0) {
-        const assignedLanguageNames = allLanguages
-          .filter(lang => alreadyAssigned.includes(lang._id))
-          .map(lang => lang.name);
-        
-        if (alreadyAssigned.length === idsArray.length) {
-          showToast(`Language${idsArray.length > 1 ? 's' : ''} already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
-          return;
-        } else {
-          showToast(`Some languages already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
-        }
+    // Handle both single ID and array of IDs
+    const idsArray = Array.isArray(languageIds) ? languageIds : [languageIds];
+    
+    // **NEW: Convert language IDs to language CODES**
+    const languageCodes = idsArray.map(id => {
+      const language = allLanguages.find(lang => lang._id === id);
+      if (!language) {
+        console.error('❌ Language not found for ID:', id);
+        return null;
       }
+      console.log(`🔄 Converting ID ${id} to code: ${language.code}`);
+      return language.code;
+    }).filter(code => code !== null); // Remove any null values
+    
+    console.log('🟡 Language codes to assign:', languageCodes);
+    
+    // Check for already assigned languages (now comparing codes)
+    const assignedLanguageCodes = projectLanguages.map(lang => {
+      // Handle both cases: if projectLanguages contains full objects or just codes
+      return lang.code || lang;
+    });
+    console.log('Currently assigned language codes:', assignedLanguageCodes);
+    
+    const alreadyAssigned = languageCodes.filter(code => assignedLanguageCodes.includes(code));
+    
+    if (alreadyAssigned.length > 0) {
+      const assignedLanguageNames = allLanguages
+        .filter(lang => alreadyAssigned.includes(lang.code))
+        .map(lang => lang.name);
       
-      // Only assign new languages
-      const newLanguageIds = idsArray.filter(id => !assignedLanguageIds.includes(id));
-      console.log('New language IDs to assign:', newLanguageIds);
-      
-      if (newLanguageIds.length > 0) {
-        console.log('🟡 Calling API to assign languages...');
-        await projectService.assignLanguagesToProject(selectedProject._id, newLanguageIds);
-        console.log('✅ API call successful');
-        
-        // **CRITICAL: Refresh project languages to update all displays immediately**
-        console.log('🟡 Refreshing project languages...');
-        await fetchProjectLanguages(selectedProject._id);
-        console.log('✅ Project languages refreshed');
-        
-        // **BONUS: Force close dropdown to show updated list**
-        setShowAllLanguagesDropdown(false);
-        
-        const assignedLanguageNames = allLanguages
-          .filter(lang => newLanguageIds.includes(lang._id))
-          .map(lang => lang.name);
-        
-        const message = newLanguageIds.length === 1 
-          ? `${assignedLanguageNames[0]} assigned successfully!`
-          : `${newLanguageIds.length} languages assigned: ${assignedLanguageNames.join(', ')}`;
-        showToast(message, 'success');
-        
-        console.log('✅ Language assignment completed successfully');
-      }
-      
-      // Close the modal
-      setAddLanguageModalOpen(false);
-      
-    } catch (error) {
-      console.error('❌ Error assigning language:', error);
-      handleApiError(error, 'Failed to assign language(s)');
-      // Don't close modal on error so user can retry
-    }
-  };
-
-  const handleQuickLanguageAssign = async (languageId) => {
-    if (!selectedProject) {
-      showToast('Please select a project first', 'warning');
-      return;
-    }
-
-    try {
-      console.log('🟡 Quick assigning language:', languageId);
-      
-      // Check if language is already assigned
-      const isAlreadyAssigned = projectLanguages.some(lang => lang._id === languageId);
-      if (isAlreadyAssigned) {
-        const language = allLanguages.find(lang => lang._id === languageId);
-        showToast(`${language?.name || 'Language'} is already assigned to this project`, 'warning');
+      if (alreadyAssigned.length === languageCodes.length) {
+        showToast(`Language${languageCodes.length > 1 ? 's' : ''} already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
         return;
+      } else {
+        showToast(`Some languages already assigned: ${assignedLanguageNames.join(', ')}`, 'warning');
       }
-
-      await projectService.assignLanguagesToProject(selectedProject._id, [languageId]);
-      
-      // **CRITICAL: Refresh project languages to update display immediately**
-      console.log('🟡 Refreshing after quick assign...');
-      await fetchProjectLanguages(selectedProject._id);
-      console.log('✅ Quick assign refresh completed');
-      
-      // Force close dropdown to show updated list
-      setShowAllLanguagesDropdown(false);
-      
-      const language = allLanguages.find(lang => lang._id === languageId);
-      showToast(`${language?.name || 'Language'} assigned successfully!`, 'success');
-    } catch (error) {
-      console.error('Error in quick language assign:', error);
-      handleApiError(error, 'Failed to assign language');
     }
-  };
+    
+    // Only assign new languages
+    const newLanguageCodes = languageCodes.filter(code => !assignedLanguageCodes.includes(code));
+    console.log('New language codes to assign:', newLanguageCodes);
+    
+    if (newLanguageCodes.length > 0) {
+      console.log('🟡 Calling API to assign language CODES...');
+      
+      // **UPDATED: Send language CODES instead of IDs to the API**
+      await projectService.assignLanguagesToProject(selectedProject._id, newLanguageCodes);
+      console.log('✅ API call successful with language codes');
+      
+      // Refresh project languages to update displays
+      console.log('🟡 Refreshing project languages...');
+      await fetchProjectLanguages(selectedProject._id);
+      console.log('✅ Project languages refreshed');
+      
+      setShowAllLanguagesDropdown(false);
+      setRubixDropdownOpen(false);
+      
+      // Get language names for success message
+      const assignedLanguageNames = allLanguages
+        .filter(lang => newLanguageCodes.includes(lang.code))
+        .map(lang => lang.name);
+      
+      const message = newLanguageCodes.length === 1 
+        ? `${assignedLanguageNames[0]} assigned successfully!`
+        : `${newLanguageCodes.length} languages assigned: ${assignedLanguageNames.join(', ')}`;
+      showToast(message, 'success');
+      
+      console.log('✅ Language assignment completed with codes');
+    }
+    
+    // Close the modal
+    setAddLanguageModalOpen(false);
+    
+  } catch (error) {
+    console.error('❌ Error assigning language:', error);
+    handleApiError(error, 'Failed to assign language(s)');
+    // Don't close modal on error so user can retry
+  }
+};
 
-  const handleDownload = async (format = 'json') => {
-    if (!selectedProject) {
-      showToast('Please select a project first.', 'warning');
+// UPDATED: Quick language assignment handler - also sends CODES instead of IDs
+const handleQuickLanguageAssign = async (languageId) => {
+  if (!selectedProject) {
+    showToast('Please select a project first', 'warning');
+    return;
+  }
+
+  try {
+    console.log('🟡 Quick assigning language ID:', languageId);
+    
+    // **NEW: Convert language ID to language CODE**
+    const language = allLanguages.find(lang => lang._id === languageId);
+    if (!language) {
+      showToast('Language not found', 'error');
       return;
     }
     
-    try {
-      await translationService.downloadTranslations(selectedProject._id, format);
-      showToast(`Translations downloaded in ${format.toUpperCase()} format`, 'success');
-    } catch (error) {
-      handleApiError(error, 'Failed to download translations');
+    const languageCode = language.code;
+    console.log(`🔄 Converting ID ${languageId} to code: ${languageCode}`);
+    
+    // Check if language is already assigned (comparing codes)
+    const assignedLanguageCodes = projectLanguages.map(lang => lang.code || lang);
+    const isAlreadyAssigned = assignedLanguageCodes.includes(languageCode);
+    
+    if (isAlreadyAssigned) {
+      showToast(`${language.name} is already assigned to this project`, 'warning');
+      return;
     }
-  };
 
-  const handleRefresh = async () => {
-    if (selectedProject) {
-      console.log('🟡 Manual refresh triggered...');
-      await Promise.all([
-        fetchProjectLanguages(selectedProject._id),
-        fetchTranslations(selectedProject._id)
-      ]);
-      console.log('✅ Manual refresh completed');
-      showToast('Data refreshed successfully', 'success');
-    }
-  };
+    console.log('🟡 Calling API to assign language CODE:', languageCode);
+    
+    // **UPDATED: Send language CODE instead of ID**
+    await projectService.assignLanguagesToProject(selectedProject._id, [languageCode]);
+    
+    // Refresh project languages
+    console.log('🟡 Refreshing after quick assign...');
+    await fetchProjectLanguages(selectedProject._id);
+    console.log('✅ Quick assign refresh completed');
+    
+    setShowAllLanguagesDropdown(false);
+    setRubixDropdownOpen(false);
+    
+    showToast(`${language.name} assigned successfully!`, 'success');
+    console.log('✅ Quick language assignment completed with code');
+  } catch (error) {
+    console.error('Error in quick language assign:', error);
+    handleApiError(error, 'Failed to assign language');
+  }
+};
 
-  // Helper functions for language management
-  const getAvailableLanguages = () => {
-    const assignedLanguageIds = projectLanguages.map(lang => lang._id);
-    return allLanguages.filter(lang => !assignedLanguageIds.includes(lang._id));
-  };
+// UPDATED: Helper function to handle both ID and CODE responses
+const getAssignedLanguageObjects = () => {
+  if (!projectLanguages || !allLanguages) return [];
+  
+  // If projectLanguages contains full objects, use them directly
+  if (projectLanguages.length > 0 && projectLanguages[0].name) {
+    console.log('🔍 Using full language objects from projectLanguages:', projectLanguages.length);
+    return projectLanguages;
+  }
+  
+  // **UPDATED: Handle both language IDs and CODES from projectLanguages**
+  const assignedIdentifiers = Array.isArray(projectLanguages) ? projectLanguages : [];
+  const assignedObjects = assignedIdentifiers
+    .map(identifier => {
+      // Handle string codes, string IDs, or objects with _id
+      let languageObject;
+      
+      if (typeof identifier === 'string') {
+        // Try to find by code first, then by ID
+        languageObject = allLanguages.find(lang => lang.code === identifier) ||
+                        allLanguages.find(lang => lang._id === identifier);
+      } else if (identifier._id) {
+        // Object with _id property
+        languageObject = allLanguages.find(lang => lang._id === identifier._id);
+      }
+      
+      if (!languageObject) {
+        console.warn('⚠️ Could not find language for identifier:', identifier);
+      }
+      
+      return languageObject;
+    })
+    .filter(lang => lang !== undefined); // Remove any undefined results
+  
+  console.log('🔍 Mapped assigned identifiers to objects:', assignedObjects.length);
+  console.log('🔍 Assigned languages:', assignedObjects.map(lang => `${lang.name}(${lang.code})`).join(', '));
+  
+  return assignedObjects;
+};
 
-  const getAssignedLanguageObjects = () => {
-    return projectLanguages || [];
-  };
+// ADDED: Missing handleDownload function
+const handleDownload = async (format = 'json') => {
+  if (!selectedProject) {
+    showToast('Please select a project first.', 'warning');
+    return;
+  }
+  
+  try {
+    console.log(`🔵 Starting download in ${format} format for project:`, selectedProject.name);
+    await translationService.downloadTranslations(selectedProject._id, format);
+    showToast(`Translations downloaded in ${format.toUpperCase()} format`, 'success');
+    console.log('✅ Download completed successfully');
+  } catch (error) {
+    console.error('❌ Download failed:', error);
+    handleApiError(error, 'Failed to download translations');
+  }
+};
+
+// ADDED: Missing handleRefresh function
+const handleRefresh = async () => {
+  if (!selectedProject) {
+    showToast('Please select a project first.', 'warning');
+    return;
+  }
+  
+  try {
+    console.log('🔄 Manual refresh triggered for project:', selectedProject.name);
+    setLoading(true);
+    
+    // Refresh both project languages and translations
+    await Promise.all([
+      fetchProjectLanguages(selectedProject._id),
+      fetchTranslations(selectedProject._id)
+    ]);
+    
+    console.log('✅ Manual refresh completed successfully');
+    showToast('Data refreshed successfully', 'success');
+  } catch (error) {
+    console.error('❌ Refresh failed:', error);
+    handleApiError(error, 'Failed to refresh data');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Helper functions for language management
+const getAvailableLanguages = () => {
+  const assignedLanguageCodes = projectLanguages.map(lang => lang.code || lang);
+  return allLanguages.filter(lang => !assignedLanguageCodes.includes(lang.code));
+};
+
 
   const isAnyModalOpen = isAddLanguageModalOpen || isAddTranslationModalOpen || isEditTranslationModalOpen;
 
@@ -337,125 +437,8 @@ const AdminDashboard = () => {
             {/* Quick Language Management Section */}
             {selectedProject && (
               <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
-                <div className="flex flex-wrap gap-4 items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Quick Assign Languages */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Quick Assign:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {getAvailableLanguages().slice(0, 3).map(language => (
-                          <button
-                            key={language._id}
-                            onClick={() => handleQuickLanguageAssign(language._id)}
-                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
-                          >
-                            + {language.name}
-                          </button>
-                        ))}
-                        {getAvailableLanguages().length > 3 && (
-                          <button
-                            onClick={() => setAddLanguageModalOpen(true)}
-                            className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
-                          >
-                            +{getAvailableLanguages().length - 3} more
-                          </button>
-                        )}
-                        {getAvailableLanguages().length === 0 && (
-                          <span className="text-xs text-gray-500 italic">All languages assigned</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* UPDATED: "All Languages" Button - Shows ONLY ASSIGNED languages */}
-                  <div className="relative" ref={allLanguagesDropdownRef}>
-                    <button
-                      onClick={() => setShowAllLanguagesDropdown(!showAllLanguagesDropdown)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      {/* UPDATED: Shows count of ASSIGNED languages only */}
-                      <span>All Languages ({getAssignedLanguageObjects().length})</span>
-                      <svg className={`w-4 h-4 transition-transform ${showAllLanguagesDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    
-                    {showAllLanguagesDropdown && (
-                      <div className="absolute right-0 z-10 mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        <div className="p-3 border-b border-gray-200 bg-gray-50">
-                          <div className="text-sm font-medium text-gray-700">
-                            All Assigned Languages
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {selectedProject.name} • {getAssignedLanguageObjects().length} languages
-                          </div>
-                        </div>
-                        
-                        {getAssignedLanguageObjects().length === 0 ? (
-                          <div className="px-4 py-8 text-gray-500 text-sm text-center">
-                            <div className="mb-2">No languages assigned yet</div>
-                            <button 
-                              onClick={() => {
-                                setShowAllLanguagesDropdown(false);
-                                setAddLanguageModalOpen(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              Assign your first language
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="max-h-48 overflow-y-auto">
-                              {/* UPDATED: Shows ONLY ASSIGNED languages */}
-                              {getAssignedLanguageObjects().map(language => (
-                                <div
-                                  key={language._id}
-                                  className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="font-medium text-gray-900">{language.name}</div>
-                                      <div className="text-sm text-gray-500">Code: {language.code}</div>
-                                    </div>
-                                    <div className="flex items-center">
-                                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                                      <span className="text-xs text-green-600 font-medium">Active</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {/* Show option to add more languages if available */}
-                            {getAvailableLanguages().length > 0 && (
-                              <div className="p-3 border-t border-gray-200 bg-gray-50">
-                                <button
-                                  onClick={() => {
-                                    setShowAllLanguagesDropdown(false);
-                                    setAddLanguageModalOpen(true);
-                                  }}
-                                  className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                  </svg>
-                                  Add More Languages ({getAvailableLanguages().length} available)
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* UPDATED: Project Info Summary with clear labeling */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-gray-200">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Project:</span>
