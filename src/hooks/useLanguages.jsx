@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE } from '../config/env';
+import { getLanguages } from '../services/authService';
 
 export const useLanguages = () => {
     const [languages, setLanguages] = useState([]);
@@ -9,31 +9,17 @@ export const useLanguages = () => {
     useEffect(() => {
         const fetchLanguages = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/languages`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch languages');
-                }
-                const data = await response.json();
-                
-                // THE FIX IS HERE: We must access the .languages property of the response data.
-                if (Array.isArray(data.languages)) {
-                    setLanguages(data.languages);
-                } else {
-                    // Handle cases where the backend response isn't what we expect
-                    setLanguages([]);
-                    console.warn("Expected 'languages' array in response, but got:", data);
-                }
-
-            } catch (e) {
-                setError(e.message);
-                console.error("Language fetch error:", e);
+                const langs = await getLanguages();
+                setLanguages(langs);
+            } catch (err) {
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
+
         fetchLanguages();
     }, []);
 
-    // Return the state for components to use
     return { languages, loading, error };
 };
