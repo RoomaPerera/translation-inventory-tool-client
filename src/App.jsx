@@ -7,8 +7,6 @@ import Register from './pages/register';
 import HomePage from './pages/HomePage';
 // import ProjectLanguageManager from './pages/ProjectLanguageManager';
 import { useAuthContext } from './hooks/useAuthContext';
-import Projects from './pages/projects';
-import ProjectForm from './components/Modals/EditProjectForm';
 import LanguageForm from './components/LanguageForm';
 import Settings from './pages/settings';
 import EditProjectForm from './components/Modals/EditProjectForm';
@@ -27,8 +25,6 @@ function AppLayout() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/projects/add" element={<ProjectForm />} />
                 <Route path="/languages/add" element={<LanguageForm />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/projects/edit/:id" element={<EditProjectForm />} />

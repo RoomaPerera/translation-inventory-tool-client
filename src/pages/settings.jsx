@@ -6,7 +6,6 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import AddProject from '../components/Modals/AddProject';
 import EditProjectForm from '../components/Modals/EditProjectForm';
 import LanguageForm from '../components/LanguageForm';
-import DebugPanel from '../components/DebugPanel';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('projects'); // Toggle between 'projects', 'languages', and 'quick-actions'
@@ -119,9 +118,6 @@ const Settings = () => {
 
   return (
     <div className="max-w-full">
-      {/* Debug Panel - Remove this after debugging */}
-      <DebugPanel />
-      
       <div className="transition-all duration-300">
         <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
         
@@ -231,12 +227,6 @@ const Settings = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <Link
-                                to={`/projects/${project._id}/translations`}
-                                className="text-green-600 hover:text-green-900 mr-4"
-                              >
-                                View Translations
-                              </Link>
                               <button
                                 onClick={() => handleEditProject(project)}
                                 className="text-indigo-600 hover:text-indigo-900 mr-4"
