@@ -1,5 +1,5 @@
 import React from 'react';
-import VersionHistory from '../VersionHistory'; // Import the VersionHistory component
+import VersionHistory from '../TranslationComponents/VersionHistory';
 
 /**
  * A panel that displays translation suggestions and version history.
