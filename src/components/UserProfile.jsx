@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PasswordInput } from './PasswordInput';
-import Button from './Button';
-import Modal from './Modal';
+import { PasswordInput } from './reusableComponents/PasswordInput';
+import Button from './reusableComponents/Button';
+import Modal from './reusableComponents/Modal';
+import TranslationQualityCheck from '../pages/TranslationQualityCheck';
 
 // Helper to generate a consistent color based on the user identifier
 const stringToColor = (str) => {
@@ -38,6 +39,10 @@ const UserProfile = () => {
       setModalEmail(JSON.parse(storedUser).email || '');
     }
   }, []);
+
+  const handleTranslationQualityCheck = () => {
+    navigate('/quality-check');
+  };
 
   const clearMessages = () => {
     setMessage('');
@@ -205,6 +210,20 @@ const UserProfile = () => {
           Deactivate Account
         </Button>
       </div>
+      {/* ------------------------------------- */}
+      <div className="space-y-3 border-t border-gray-200 pt-8 mt-8">
+        <h3 className="text-lg font-bold text-indigo-700">TranslationQualityCheck</h3>
+        
+        <Button
+          type="button"
+          variant="primary"
+          className="bg-red-600 hover:bg-red-700"
+          onClick={handleTranslationQualityCheck}
+        >
+          TranslationQualityCheck
+        </Button>
+      </div>
+      {/* -------------------------------------------- */}
 
       {/* Modal */}
       <Modal

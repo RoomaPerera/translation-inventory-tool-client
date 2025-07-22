@@ -6,6 +6,8 @@ const navLinks = [
   { name: 'All Entries', to: '/entries', roles: ['Administrator', 'Developer'] },
   { name: 'Activity Log', to: '/activity', roles: ['Administrator', 'Translator'] },
   { name: 'Settings', to: '/settings', roles: ['Administrator', 'Developer', 'Translator'] },
+  { name: 'Readability Validator', to: '/tools/readability-validator', roles: ['Administrator', 'Developer'] },
+
 ];
 
 const NavBar = ({ user, onLogout }) => {

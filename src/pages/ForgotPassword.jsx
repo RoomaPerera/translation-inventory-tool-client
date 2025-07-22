@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Side from '../components/Side';
-import { PasswordInput } from '../components/PasswordInput';
+import { PasswordInput } from '../components/reusableComponents/PasswordInput';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');

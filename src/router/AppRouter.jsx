@@ -8,10 +8,13 @@ import LoginPage from '../pages/login';
 import Registration from '../pages/registration';
 import ForgotPassword from '../pages/ForgotPassword';
 // import ResetPassword from '../pages/ResetPassword';
+// import AllEntries from '../pages/AllEntries';
 import Settings from '../pages/Settings';
 import ButtonDemo from '../pages/ButtonDemo';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminPage from '../pages/AdminPage'; // Make sure this import exists
+import TranslationQualityCheck from '../pages/TranslationQualityCheck';
+import ReadabilityValidator from '../pages/ReadabilityValidator';
 
 const NotFound = () => (
   <div className="p-8 text-center text-2xl">404 - Page Not Found</div>
@@ -45,10 +48,14 @@ const AppRouter = () => {
       {/* Public routes */}
       <Route path="/login" element={<LoginPage setUser={setUser} />} />
       <Route path="/register" element={<Registration />} />
+      {/* <Route path="/entries" element={<PrivateRoute><AllEntries user={user} onLogout={handleLogout}/></PrivateRoute>}/> */}
+      
       <Route path="/forgot-password" element={<ForgotPassword />} />
       {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
       <Route path="/button-demo" element={<ButtonDemo />} />
-
+      <Route path="/quality-check" element={<TranslationQualityCheck />} />
+      <Route path="/tools/readability-validator" element={<ReadabilityValidator />} />
+      
       {/* Protected routes */}
       <Route
         path="/"

@@ -1,12 +1,13 @@
 
-AnotherStrongPassw09rd!
+AnotherStrongPassw0rd!
 
 
 {
     "userName": "John Doe",
-    "email": "john112@example.com",
+    "email": "john1@example.com",
     "password": "AnotherStrongPassw0rd!",
-    "role": "Translator",
+    "role":  "Translator",
+    "roleStatus":"Approved",
     "languages": ["en", "fr"]
 }
 
@@ -14,6 +15,15 @@ AnotherStrongPassw09rd!
     "userName": "John Doe",
     "email": "john11@example.com",
     "password": "AnotherStrongPassw0rd!",
-    "role": "Translator",
+    "role":"Developer",
+    "languages": ["en", "fr"]
+}
+
+{
+    "userName": "John Doe",
+    "email": "john12@example.com",
+    "password": "AnotherStrongPassw0rd!",
+    "role": "Developer",
+    "roleStatus":"Approved",
     "languages": ["en", "fr"]
 }

@@ -1,7 +1,7 @@
 // src/pages/Homepage.jsx
 
 import React, { useEffect, useState } from 'react';
-import NavBar from '../components/NavBar';
+import NavBar from '../components/reusableComponents/NavBar';
 import { PlusIcon } from '@heroicons/react/outline';
 
 const Homepage = () => {

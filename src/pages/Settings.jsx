@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import NavBar from '../components/NavBar';
+import NavBar from '../components/reusableComponents/NavBar';
 import RoleBasedTabs from '../components/Tabs'; // Adjust if using named export
 import UserProfile from '../components/UserProfile';
-import GTNPortal from '../components/GTNPortal';
+import GTNPortal from '../components/reusableComponents/GTNPortal';
 
 const ALL_TABS = [
   { name: 'User List', roles: ['Administrator'] },
