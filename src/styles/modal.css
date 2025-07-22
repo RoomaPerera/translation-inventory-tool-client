@@ -6,7 +6,8 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px); /* This is the blur effect */
+  backdrop-filter: blur(4px);
+  /* This is the blur effect */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -17,15 +18,18 @@
 .modal-content {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-  width: 450px; /* Increased width slightly */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 450px;
+  /* Increased width slightly */
   max-width: 90%;
-  overflow: hidden; /* Ensures the sharp corners from the header */
+  overflow: hidden;
+  /* Ensures the sharp corners from the header */
 }
 
 /* Modal Header Styles */
 .modal-header {
-  background-color: #5221a7; /* Using brand-purple-base */
+  background-color: #5221a7;
+  /* Using brand-purple-base */
   color: white;
   padding: 15px 20px;
   display: flex;
@@ -36,7 +40,8 @@
 .modal-header h2 {
   margin: 0;
   font-size: 18px;
-  font-weight: 600; /* Bolder */
+  font-weight: 600;
+  /* Bolder */
 }
 
 .modal-header .subtitle {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthContext } from './useAuthContext';
-import authService from '../services/authService'; // Import the service
+import { loginUser } from '../services/authService';
 
 export const useLogin = () => {
     const [error, setError] = useState(null);
@@ -10,25 +10,16 @@ export const useLogin = () => {
     const login = async (email, password) => {
         setIsLoading(true);
         setError(null);
-
         try {
-            // Call the service instead of using fetch directly
-            const user = await authService.login(email, password);
-            
-            // Save user to local storage
+            const user = await loginUser({ email, password });
             localStorage.setItem('user', JSON.stringify(user));
-            
-            // Dispatch login action
             dispatch({ type: 'LOGIN', payload: user });
-            
             setIsLoading(false);
-            return true; // Signal success to the component
-
+            return true;
         } catch (err) {
-            // Axios places the server's error message in err.response.data
-            setError(err.response?.data?.error || 'Login failed. Please try again.');
+            setError(err.message);
             setIsLoading(false);
-            return false; // Signal failure
+            return false;
         }
     };
 

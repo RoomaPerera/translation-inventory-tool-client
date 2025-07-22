@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE } from '../config/env';
+import { getLanguages } from '../services/authService';
 
 export const useLanguages = () => {
     const [languages, setLanguages] = useState([]);
@@ -7,10 +7,18 @@ export const useLanguages = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/auth/getLanguages`, { credentials: 'include' })
-            .then(r => r.json())
-            .then(j => { setLanguages(j.languages || []); setLoading(false) })
-            .catch(e => { setError(e.message); setLoading(false) });
+        const fetchLanguages = async () => {
+            try {
+                const langs = await getLanguages();
+                setLanguages(langs);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLanguages();
     }, []);
 
     return { languages, loading, error };
