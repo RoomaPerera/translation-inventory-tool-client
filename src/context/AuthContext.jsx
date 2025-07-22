@@ -5,31 +5,30 @@ export const AuthContext = createContext();
 const authReducer = (state, action) => {
     switch (action.type) {
         case 'LOGIN':
-            return { user: action.payload };
+            return { ...state, user: action.payload, authReady: true };
         case 'LOGOUT':
-            return { user: null };
+            return { ...state, user: null, authReady: true };
+        case 'AUTH_READY':
+            return { ...state, authReady: true };
         default:
             return state;
     }
 };
 
 export const AuthContextProvider = ({ children }) => {
-    const [state, dispatch] = useReducer(authReducer, { user: null });
+    const [state, dispatch] = useReducer(authReducer, {
+        user: null,
+        authReady: false,
+    });
 
     useEffect(() => {
         const stored = localStorage.getItem('user');
         if (stored) {
-            try {
-                const user = JSON.parse(stored);
-                dispatch({ type: 'LOGIN', payload: user });
-            } catch (error) {
-                console.error("Failed to parse user from localStorage", error);
-                localStorage.removeItem('user');
-            }
+            dispatch({ type: 'LOGIN', payload: JSON.parse(stored) });
+        } else {
+            dispatch({ type: 'AUTH_READY' });
         }
     }, []);
-
-    console.log('AuthContext state: ', state)
 
     return (
         <AuthContext.Provider value={{ ...state, dispatch }}>
