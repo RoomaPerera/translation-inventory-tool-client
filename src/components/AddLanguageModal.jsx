@@ -17,11 +17,11 @@ const AddLanguageModal = ({ isOpen, onClose }) => {
             setAssignedLanguages(user?.languages || []);
         }
     }, [isOpen, user]);
-    
+
     if (!isOpen) return null;
 
     const toggleLanguage = (code) => {
-        setAssignedLanguages(prev => 
+        setAssignedLanguages(prev =>
             prev.includes(code) ? prev.filter(langCode => langCode !== code) : [...prev, code]
         );
     };
@@ -59,10 +59,10 @@ const AddLanguageModal = ({ isOpen, onClose }) => {
                             {availableLanguages.map((lang) => (
                                 <li key={lang.code} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
                                     <span className="text-base">{lang.name} ({lang.code.toUpperCase()})</span>
-                                    <button 
+                                    <button
                                         onClick={() => toggleLanguage(lang.code)}
-                                        className={`text-xs font-bold py-1 px-4 rounded-full ${assignedLanguages.includes(lang.code) 
-                                            ? "bg-green-500 text-white" 
+                                        className={`text-xs font-bold py-1 px-4 rounded-full ${assignedLanguages.includes(lang.code)
+                                            ? "bg-green-500 text-white"
                                             : "bg-white border border-gray-400 text-gray-700 hover:bg-gray-100"}`}
                                     >
                                         {assignedLanguages.includes(lang.code) ? 'Assigned' : 'Assign'}
@@ -73,7 +73,7 @@ const AddLanguageModal = ({ isOpen, onClose }) => {
                     )}
                 </div>
                 <div className="p-4 bg-gray-50 border-t flex justify-end items-center gap-4">
-                     {error && <p className="text-red-500 text-sm mr-auto">{error}</p>}
+                    {error && <p className="text-red-500 text-sm mr-auto">{error}</p>}
                     <button onClick={onClose} className="py-2 px-5 rounded-md border text-gray-700 hover:bg-gray-100">
                         Cancel
                     </button>
