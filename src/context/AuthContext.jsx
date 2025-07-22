@@ -1,22 +1,33 @@
-import { createContext, useReducer } from "react";
+import { createContext, useReducer, useEffect } from 'react';
 
-export const AuthContext = createContext()
+export const AuthContext = createContext();
 
-export const authReducer = (state, action) => {
+const authReducer = (state, action) => {
     switch (action.type) {
         case 'LOGIN':
-            return { user: action.payload }
+            return { user: action.payload };
         case 'LOGOUT':
-            return { user: null }
+            return { user: null };
         default:
-            return state
+            return state;
     }
-}
+};
 
 export const AuthContextProvider = ({ children }) => {
-    const [state, dispatch] = useReducer(authReducer, {
-        user: null
-    })
+    const [state, dispatch] = useReducer(authReducer, { user: null });
+
+    useEffect(() => {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+            try {
+                const user = JSON.parse(stored);
+                dispatch({ type: 'LOGIN', payload: user });
+            } catch (error) {
+                console.error("Failed to parse user from localStorage", error);
+                localStorage.removeItem('user');
+            }
+        }
+    }, []);
 
     console.log('AuthContext state: ', state)
 
@@ -24,5 +35,5 @@ export const AuthContextProvider = ({ children }) => {
         <AuthContext.Provider value={{ ...state, dispatch }}>
             {children}
         </AuthContext.Provider>
-    )
-}
+    );
+};
