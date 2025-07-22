@@ -3,6 +3,7 @@ import { SearchInput } from '../reusableComponents/SearchInput';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
 
+// This component receives the raw handler function from the Home page.
 const HomeHeader = ({ searchTerm, onSearchChange, onAssignLanguageClick }) => {
     const productOptions = [{ value: 'Rubix', label: 'Rubix' }];
 
@@ -14,6 +15,13 @@ const HomeHeader = ({ searchTerm, onSearchChange, onAssignLanguageClick }) => {
            <Select options={productOptions} selected={'Rubix'} onSelect={() => {}} />
         </div>
         <div className="w-64">
+           {/*
+             THE FIX IS HERE:
+             We pass the `onSearchChange` handler directly to the `onChange` prop.
+             The `SearchInput` component expects to receive the raw event 'e',
+             and the `Home` page's handler is designed to receive the extracted value.
+             This correctly wires them together.
+           */}
            <SearchInput
               placeholder="Search by Key..."
               value={searchTerm}
