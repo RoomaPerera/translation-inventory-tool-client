@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import { ChevronDownIcon } from '@heroicons/react/solid';
 
 // The 'options' prop should be an array of objects, e.g., [{ value: 'admin', label: 'Admin' }]
 export const Select = ({ label, options, selected, onSelect }) => {

@@ -1,11 +1,34 @@
-// src/pages/Homepage.jsx
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import HomeHeader from '../components/home/HomeHeader';
+import HomeToolbar from '../components/home/HomeToolbar';
+import TranslationTable from '../components/TranslationTable'; // This will be our updated table
+import AddTranslationModal from '../components/AddTranslationModal';
+import EditTranslationModal from '../components/EditTranslationModal';
+import AddLanguageModal from '../components/AddLanguageModal';
+import { Pagination } from '../components/reusableComponents/Pagination'; // Import pagination
+import translationService from '../services/translationService';
 import NavBar from '../components/reusableComponents/NavBar';
-import { PlusIcon } from '@heroicons/react/outline';
 
-const Homepage = () => {
+const ALL_TABS = [
+  { name: 'User List', roles: ['Administrator'] },
+  { name: 'New Project', roles: ['Administrator'] },
+  { name: 'User Profile', roles: ['Administrator', 'Developer', 'Translator'] },
+];
+
+const Home = () => {
+  const [translations, setTranslations] = useState([]);
+  const [paginationData, setPaginationData] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('User Profile');
+
+
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isLangModalOpen, setLangModalOpen] = useState(false);
+  const [editingTranslation, setEditingTranslation] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -14,82 +37,118 @@ const Homepage = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+  useEffect(() => {
+    if (!user) return;
+    const isTabValid = ALL_TABS.some(
+      (tab) => tab.name === activeTab && tab.roles.includes(user.role)
+    );
+    if (!isTabValid) {
+      setActiveTab('User Profile');
+    }
+  }, [user, activeTab]);
+
+  const fetchTranslations = useCallback(async (page) => {
+    try {
+      setLoading(true);
+      const response = await translationService.getTranslations(page);
+      setTranslations(response.data.translations);
+      setPaginationData({
+          currentPage: response.data.currentPage,
+          totalPages: response.data.totalPages,
+          totalItems: response.data.totalItems
+      });
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch translations. Please ensure the backend server is running.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTranslations(currentPage);
+  }, [currentPage, fetchTranslations]);
+  
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
-  if (!user) {
-    return <div className="p-8 text-center">Loading user info...</div>;
-  }
+  const handleAddNew = () => setAddModalOpen(true);
+  const handleOpenLangModal = () => setLangModalOpen(true);
+
+  const handleEdit = (translation) => {
+    setEditingTranslation(translation);
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this translation?')) {
+        try {
+            await translationService.deleteTranslation(id);
+            fetchTranslations(currentPage); // Refresh current page after delete
+        } catch (err) {
+            alert('Failed to delete translation.');
+        }
+    }
+  };
+  
+  const isAnyModalOpen = isAddModalOpen || isEditModalOpen || isLangModalOpen;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar NavBar */}
+    <>
+   <div className='flex'>
+    <div> 
       <aside className="w-64">
-        <NavBar user={user} onLogout={handleLogout} />
+        <NavBar
+          user={user}
+          onLogout={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            window.location.href = '/login';
+          }}
+        />
       </aside>
+      </div>
+      <div>
+           <div className={`flex flex-col h-full p-5 transition-filter duration-300 ${isAnyModalOpen ? 'blur-sm' : ''}`}>
+        <HomeHeader onAssignLanguageClick={handleOpenLangModal} />
+        <HomeToolbar onAddNewTranslation={handleAddNew} />
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-xl font-semibold text-gray-800">GTN Portal</div>
-          <select className="border rounded p-2">
-            <option>Rubix</option>
-          </select>
-          <input type="text" placeholder="Search..." className="border rounded p-2" />
-          <button className="flex items-center bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-            <PlusIcon className="w-5 h-5 mr-2" /> Assign New Language
-          </button>
+        <div className="flex-grow overflow-y-auto bg-white rounded-lg shadow-sm">
+          {loading ? (
+             <div className="p-8 text-center">Loading Translations...</div>
+          ) : error ? (
+            <div className="p-8 text-center text-red-500 bg-red-100 rounded-lg">{error}</div>
+          ) : (
+            <>
+              <TranslationTable 
+                translations={translations}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+               {paginationData.totalItems > 0 && (
+                 <Pagination
+                    currentPage={paginationData.currentPage}
+                    totalItems={paginationData.totalItems}
+                    itemsPerPage={10} // Or from a state variable
+                    onPageChange={handlePageChange}
+                  />
+               )}
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button className="flex items-center bg-white text-black px-4 py-2 rounded shadow">
-            <PlusIcon className="w-5 h-5 mr-2" /> Add New Translation
-          </button>
-          <select className="border rounded p-2">
-            <option>Show All Entries</option>
-          </select>
-          <select className="border rounded p-2">
-            <option>All Languages</option>
-          </select>
-          <select className="border rounded p-2">
-            <option>Translations</option>
-          </select>
-          <button className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Download JSON</button>
-        </div>
+      <AddTranslationModal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} onSave={() => fetchTranslations(currentPage)} />
+      <EditTranslationModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} onSave={() => fetchTranslations(currentPage)} translation={editingTranslation} />
+      <AddLanguageModal isOpen={isLangModalOpen} onClose={() => setLangModalOpen(false)} />
+      </div>
 
-        {/* Table */}
-        <div className="bg-white shadow rounded overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-purple-700 text-white">
-              <tr>
-                <th className="px-4 py-2 text-left text-sm font-semibold">No</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold">Key</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold">Language</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold">Translation</th>
-                <th className="px-4 py-2 text-left text-sm font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              <tr>
-                <td className="px-4 py-2">1</td>
-                <td className="px-4 py-2">ABOUT</td>
-                <td className="px-4 py-2">EN</td>
-                <td className="px-4 py-2">About</td>
-                <td className="px-4 py-2 space-x-2">
-                  <button className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500 text-white text-sm">Edit</button>
-                  <button className="px-3 py-1 bg-red-500 rounded hover:bg-red-600 text-white text-sm">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </main>
-    </div>
+   </div>
+   
+    </>
   );
 };
 
-export default Homepage;
+export default Home;

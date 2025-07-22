@@ -5,7 +5,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import Homepage from '../pages/Homepage';
 import LoginPage from '../pages/login';
-import Registration from '../pages/registration';
+import Registration from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
 // import ResetPassword from '../pages/ResetPassword';
 // import AllEntries from '../pages/AllEntries';
