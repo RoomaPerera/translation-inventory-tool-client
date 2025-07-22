@@ -2,7 +2,7 @@ import React from 'react';
 // Corrected import path for Heroicons v2
 import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 
-export const SearchInput = ({ placeholder }) => {
+export const SearchInput = ({ placeholder, value, onChange }) => {
   return (
     <div>
       <label htmlFor="search" className="sr-only">
@@ -19,6 +19,8 @@ export const SearchInput = ({ placeholder }) => {
           id="search"
           className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           placeholder={placeholder}
+           value={value}       // Binds the input's display value
+          onChange={onChange}   // Connects the typing handler
         />
       </div>
     </div>
