@@ -1,6 +1,5 @@
 import React from 'react';
-// Corrected import path for Heroicons v2
-import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { SearchIcon } from '@heroicons/react/solid';
 
 export const SearchInput = ({ placeholder }) => {
   return (
@@ -10,8 +9,7 @@ export const SearchInput = ({ placeholder }) => {
       </label>
       <div className="relative rounded-md shadow-sm">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          {/* Use the new icon name and ensure it renders */}
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </div>
         <input
           type="search"
@@ -23,7 +21,4 @@ export const SearchInput = ({ placeholder }) => {
       </div>
     </div>
   );
-};
-
-// Export as named, since it's used that way.
-export default SearchInput; 
+}; 

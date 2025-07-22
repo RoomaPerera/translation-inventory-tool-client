@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// Corrected import path for Heroicons v2
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 
 export const PasswordInput = ({ label, name, placeholder, required = false, value, onChange }) => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
@@ -33,8 +32,7 @@ export const PasswordInput = ({ label, name, placeholder, required = false, valu
           aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
         >
           {isPasswordVisible ? (
-            // Use the new EyeSlashIcon
-            <EyeSlashIcon className="h-5 w-5 text-gray-400" />
+            <EyeOffIcon className="h-5 w-5 text-gray-400" />
           ) : (
             <EyeIcon className="h-5 w-5 text-gray-400" />
           )}
@@ -43,6 +41,3 @@ export const PasswordInput = ({ label, name, placeholder, required = false, valu
     </div>
   );
 };
-
-// Export as named, since it's used that way.
-export default PasswordInput;

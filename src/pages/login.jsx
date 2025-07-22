@@ -1,62 +1,119 @@
+// src/pages/LoginPage.jsx
+
 import React, { useState } from 'react';
-import { useLogin } from '../hooks/useLogin';
-import { useNavigate, Link } from 'react-router-dom';
-import { Input } from "../components/Input";
-import Button from "../components/Button";
-import gtnLogo from '../assets/images/gtn-logo.png'; // Use our existing logo path
-export default function Login() {
-const [email, setEmail] = useState('');
-const [password, setPassword] = useState('');
-const { login, isLoading, error } = useLogin();
-const navigate = useNavigate();
-const handleSubmit = async e => {
+import { Link, useNavigate } from 'react-router-dom';
+import Button from '../components/reusableComponents/Button';
+import Side from '../components/Side';
+
+const LoginPage = () => {
+  const [formData, setFormData] = useState({ email: '', password: '', remember: false });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) {
-        navigate('/');
+    setError('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      navigate('/');
+    } catch (err) {
+      setError('Server error. Please try again later.');
+      console.error('Login error:', err);
     }
+  };
+
+  return (
+    <div className="flex flex-row min-h-screen">
+      <Side />
+      <div className="flex w-1/2 items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-8 text-center">
+            <h1 className="text-3xl font-bold text-purple-700">GTN Portal</h1>
+            <h2 className="mt-2 text-xl text-gray-600">Log In</h2>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
+          </div>
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <div className="space-y-2 text-left">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+                required
+              />
+            </div>
+
+            <div className="space-y-2 text-left">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  name="remember"
+                  checked={formData.remember}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">Remember me</label>
+              </div>
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-purple-600 hover:text-purple-500"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
+            <Button type="submit" variant="primary" className="w-full">Log In</Button>
+          </form>
+
+          <div className="p-8 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-medium text-purple-600 hover:text-purple-800">Sign Up</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-return (
-    <div className="flex h-screen w-full m-0 p-0 overflow-hidden">
-        {/* Left Panel */}
-        <div className="w-2/5 bg-gradient-to-b from-purple-800 to-teal-500 text-white flex flex-col items-center justify-center p-10">
-            <img src={gtnLogo} alt="Company Logo" className="w-32 h-auto mb-2" />
-            <h1 className="text-2xl font-semibold w-30 text-center">GTN Portal</h1>
-        </div>
-
-        {/* Right Panel */}
-        <div className="w-3/5 bg-gray-100 flex items-center justify-center min-h-screen py-8">
-            <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
-                <h2 className="text-xl font-semibold text-center text-purple-700 mb-6">
-                    Log In
-                </h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                        label="Email Address" id="email" name="email" type="email"
-                        value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email" required
-                    />
-                    <Input
-                        label="Password" id="password" name="password" type="password"
-                        value={password} onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password" required
-                    />
-                    {error && ( <p className="text-red-600 font-semibold text-sm pt-1">{error}</p> )}
-                    <div className="pt-2">
-                       <Button type="submit" disabled={isLoading} className="w-full bg-teal-600 hover:bg-teal-700 text-white focus:ring-teal-500 py-2.5">
-                           {isLoading ? 'Logging in...' : 'Log In'}
-                       </Button>
-                    </div>
-                    <div className="text-sm text-center pt-2">
-                        Don't have an account?{' '}
-                        <Link to="/register" className="font-semibold text-purple-700 hover:underline">
-                            Sign Up
-                        </Link>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-);
-}
+export default LoginPage;
