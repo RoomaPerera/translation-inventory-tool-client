@@ -5,23 +5,24 @@ import { loginUser } from '../services/authService';
 export const useLogin = () => {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const { dispatch } = useAuthContext();
+    const { login } = useAuthContext();
 
-    const login = async (email, password) => {
+    const handleLogin = async (email, password) => {
         setIsLoading(true);
         setError(null);
         try {
-            const user = await loginUser({ email, password });
-            localStorage.setItem('user', JSON.stringify(user));
-            dispatch({ type: 'LOGIN', payload: user });
+            const response = await loginUser({ email, password });
+            // The cookie is automatically set by the server
+            // We just need to update the context with user data
+            login({ email: response.data.email });
             setIsLoading(false);
             return true;
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.error || err.message);
             setIsLoading(false);
             return false;
         }
     };
 
-    return { login, isLoading, error };
+    return { login: handleLogin, isLoading, error };
 };
