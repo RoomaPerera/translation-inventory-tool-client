@@ -20,6 +20,10 @@ import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
 import { ActivityLogProvider } from "./context/ActivityLogContext";
 
+function PrivateRoute({ children }) {
+  const { user } = useAuthContext();
+  return user ? children : <Navigate to="/login" />;
+}
 function App() {
   const { authReady } = useAuthContext();
 
@@ -53,6 +57,15 @@ function App() {
             }
           />
 
+          <Route
+            path="/admin/anomalies"
+            element={
+              <PrivateRoute>
+                <AdminAnomalyDashboard />
+              </PrivateRoute>
+            }
+          />
+
           <Route path="/settings" element={<Settings />} />
           {/* Redirect unmatched routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -61,5 +74,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
