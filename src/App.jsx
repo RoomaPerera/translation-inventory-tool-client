@@ -18,6 +18,7 @@ import Home from "./pages/Home";
 import AllEntries from "./pages/AllEntries";
 import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
+import { ActivityLogProvider } from "./context/ActivityLogContext";
 
 function App() {
   const { authReady } = useAuthContext();
@@ -42,7 +43,16 @@ function App() {
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/all-entries" element={<AllEntries />} />
-          <Route path="/activity-log" element={<ActivityLog />} />
+
+          <Route
+            path="/activity-log"
+            element={
+              <ActivityLogProvider>
+                <ActivityLog />
+              </ActivityLogProvider>
+            }
+          />
+
           <Route path="/settings" element={<Settings />} />
           {/* Redirect unmatched routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
