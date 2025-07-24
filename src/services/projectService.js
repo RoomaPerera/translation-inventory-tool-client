@@ -10,7 +10,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds for debugging
   withCredentials: true // Important: Include cookies in requests
 });
 

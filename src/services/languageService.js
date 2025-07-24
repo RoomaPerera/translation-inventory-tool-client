@@ -71,12 +71,12 @@ const languageService = {
   // Get language by ID
   getLanguageById: async (id) => {
     try {
-      console.log(`🔵 Fetching language by ID: ${id}`);
+      console.log(`Fetching language by ID: ${id}`);
       const response = await apiClient.get(`/languages/${id}`);
-      console.log(`✅ Language fetched successfully:`, response.data);
+      console.log(`Language fetched successfully:`, response.data);
       return response.data;
     } catch (error) {
-      console.error(`❌ Failed to fetch language ${id}:`, error);
+      console.error(`Failed to fetch language ${id}:`, error);
       throw handleApiError(error);
     }
   },
@@ -84,7 +84,7 @@ const languageService = {
   // Add a new language
   addLanguage: async (languageData) => {
     try {
-      console.log('🔵 Adding new language:', languageData);
+      console.log('Adding new language:', languageData);
       
       // Validate required fields
       if (!languageData.name || !languageData.code) {
@@ -92,10 +92,10 @@ const languageService = {
       }
       
       const response = await apiClient.post('/languages', languageData);
-      console.log('✅ Language added successfully:', response.data);
+      console.log('Language added successfully:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Failed to add language:', error);
+      console.error('Failed to add language:', error);
       throw handleApiError(error);
     }
   },

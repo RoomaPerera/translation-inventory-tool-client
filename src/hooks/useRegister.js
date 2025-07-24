@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthContext } from './useAuthContext';
-import { API_BASE } from '../config/env';
+import { registerUser } from '../services/authService';
 
 export const useRegister = () => {
     const [error, setError] = useState(null);
@@ -11,23 +11,11 @@ export const useRegister = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE}/api/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ userName, email, password, role, languages })
-            });
-            const json = await res.json();
-            if (!res.ok) {
-                setError(json.error || 'Registration failed');
-                setIsLoading(false);
-                return null;
-            }
-
+            const newUser = await registerUser(userName, email, password, role, languages);
             setIsLoading(false);
-            return json;
-        } catch {
-            setError('Network error');
+            return newUser;
+        } catch (err) {
+            setError(err.message);
             setIsLoading(false);
             return null;
         }

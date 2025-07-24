@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useRegister } from "../hooks/useRegister";
 import { useNavigate } from "react-router-dom";
 import { useLanguages } from "../hooks/useLanguages";
-import { Input } from "../components/UserModuleComponents/Input";
-import { Select } from "../components/UserModuleComponents/Select";
-import Button from "../components/UserModuleComponents/Button";
+import { Input } from "../components/RegisterLoginComponents/Input";
+import { Select } from "../components/reusableComponents/Select";
+import Button from "../components/reusableComponents/Button";
+import GTNLogo from "../assets/images/gtn-logo.png"
 
 const Register = () => {
     const [username, setUsername] = useState("");
@@ -65,15 +66,16 @@ const Register = () => {
     ];
 
     return (
-        <div className="flex h-screen w-full m-0 p-0 overflow-hidden">
+        <div className="flex min-h-screen w-full m-0 p-0 overflow-hidden">
             {/* Left Panel */}
-            <div className="w-2/5 bg-gradient-to-b from-purple-800 to-teal-500 text-white flex flex-col items-center justify-center p-10">
-                <img src="/GTN Logo.png" alt="Company Logo" className="w-32 h-auto mb-2" />
+            <div className="w-2/5 min-w-0 bg-gradient-to-b from-purple-800 to-teal-500 text-white flex flex-col 
+            items-center justify-center p-10 overflow-hidden">
+                <img src={GTNLogo} alt="Company Logo" className="w-32 h-auto mb-2" />
                 <h1 className="text-2xl font-semibold w-30 text-center">GTN Portal</h1>
             </div>
 
             {/* Right Panel */}
-            <div className="w-3/5 bg-gray-100 flex items-center justify-center min-h-screen py-8 overflow-hidden">
+            <div className="w-3/5 min-w-0 bg-gray-100 flex items-center justify-center min-h-screen py-8 overflow-hidden">
                 <div className={`bg-white p-6 rounded shadow-md w-full max-w-sm transition-all duration-200 ${isLanguageDropdownOpen && role === "Translator"
                     ? 'h-full max-h-full'
                     : 'max-h-fit'

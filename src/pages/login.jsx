@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
-import { Input } from "../components/UserModuleComponents/Input";
-import Button from "../components/UserModuleComponents/Button";
+import { Input } from "../components/RegisterLoginComponents/Input";
+import Button from "../components/reusableComponents/Button";
+import GTNLogo from "../assets/images/gtn-logo.png"
 
 export default function Login() {
     const [email, setEmail] = useState('');
