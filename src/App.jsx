@@ -19,6 +19,7 @@ import AllEntries from "./pages/AllEntries";
 import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
 import { ActivityLogProvider } from "./context/ActivityLogContext";
+import AdminAnomalyDashboard from "./pages/AdminAnomalyDashboard.jsx";
 
 function PrivateRoute({ children }) {
   const { user } = useAuthContext();

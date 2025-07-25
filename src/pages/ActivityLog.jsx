@@ -25,14 +25,19 @@ const ActivityLog = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getActivityLogs({
-      limit: filters.limit,
-      filterRole: filters.filterRole,
-      userId: filters.userId,
-      startDate: filters.startDate,
-      endDate: filters.endDate,
-    });
+    if (user && user.role === "Admin") {
+      getActivityLogs({
+        limit: filters.limit,
+        filterRole: filters.filterRole,
+        userId: filters.userId,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      });
+    } else if (user && user.role === "Translator") {
+      getActivityLogs(); // No filters for Translator
+    }
   }, [
+    user,
     filters.limit,
     filters.filterRole,
     filters.userId,
@@ -119,8 +124,8 @@ const ActivityLog = () => {
                 </div>
               </div>
 
-              {/* Admin Filter Controls */}
-              {(userRole === "Admin" || userRole === "admin") && (
+              {/* Only show filter controls for Admins */}
+              {user.role === "Admin" && (
                 <div className="flex items-center space-x-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -197,7 +202,9 @@ const ActivityLog = () => {
           </div>
         ) : (
           /* Activity Table */
-          <ActivityTable logs={logs} userRole={userRole} />
+          <>
+            <ActivityTable logs={logs} userRole={userRole} />
+          </>
         )}
       </div>
     </div>

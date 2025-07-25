@@ -12,31 +12,29 @@ export const ActivityLogProvider = ({ children }) => {
 
   const getActivityLogs = async (filters = {}) => {
     if (!user) return;
-
     try {
       setLoading(true);
       setError(null);
-      const response = await fetchActivityLogs(filters);
-
-      // Your backend returns logs directly as array
+      let response;
+      if (user.role === "Admin") {
+        response = await fetchActivityLogs(filters);
+      } else {
+        response = await fetchActivityLogs(); // No filters for Translator
+      }
+      if (response && response.error) {
+        setError(response.error);
+        setLogs([]);
+        return;
+      }
       if (Array.isArray(response)) {
         setLogs(response);
       } else {
-        console.error("Unexpected response format:", response);
         setError("Failed to fetch activity logs - unexpected response format");
       }
     } catch (err) {
-      console.error("Error fetching logs:", err);
-      if (err.message.includes("404") || err.message.includes("not found")) {
-        setError(
-          "Activity logs feature not available yet. Backend routes need to be added."
-        );
-      } else {
-        setError(
-          err.message ||
-            "Failed to fetch activity logs. Please try again later."
-        );
-      }
+      setError(
+        err.message || "Failed to fetch activity logs. Please try again later."
+      );
     } finally {
       setLoading(false);
     }
