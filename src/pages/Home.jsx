@@ -7,7 +7,7 @@ import { showToast, handleApiError } from '../utils/notifications';
 import Header from '../components/home/HomeHeader';
 import Toolbar from '../components/home/HomeToolbar';
 import TranslationTable from '../components/TranslationTable';
-import AddLanguageModal from '../components/ProjectLanguageComponents/AddLanguageModal';
+import AddLanguageModal from '../components/ProjectLanguageComponents/AssignLanguageModal';
 import AddTranslationModal from '../components/AddTranslationModal';
 import EditTranslationModal from '../components/EditTranslationModal';
 import { Pagination } from '../components/reusableComponents/Pagination';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AddLanguageModal = ({ 
+const AssignLanguageModal = ({ 
   isOpen, 
   onClose, 
   allLanguages = [], 
@@ -223,4 +223,4 @@ const AddLanguageModal = ({
     );
 };
 
-export default AddLanguageModal;
+export default AssignLanguageModal;

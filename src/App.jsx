@@ -6,7 +6,7 @@ import ProtectedLayout from './components/ProtectedLayout';
 import Navbar from './components/reusableComponents/navBar';
 import Login from './pages/login';
 import Register from './pages/register';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/Home';
 import AllEntries from './pages/AllEntries';
 import ActivityLog from './pages/ActivityLog';
 // import ProjectLanguageManager from './pages/ProjectLanguageManager';
