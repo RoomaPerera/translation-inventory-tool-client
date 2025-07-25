@@ -14,7 +14,7 @@ export const useLogin = () => {
             const response = await loginUser({ email, password });
             // The cookie is automatically set by the server
             // We just need to update the context with user data
-            login(response.data); // Store full user object (id, email, userName, role, token)
+            login(response.data.user); // Store only the user object in context
             setIsLoading(false);
             return true;
         } catch (err) {

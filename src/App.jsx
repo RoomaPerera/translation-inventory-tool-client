@@ -10,7 +10,7 @@ import { useAuthContext } from "./hooks/useAuthContext";
 import ProtectedLayout from "./components/ProtectedLayout";
 
 // Public pages
-import Login from "./pages/Login";
+import Login from "./pages/login";
 import Register from "./pages/Register";
 
 // Protected pages
