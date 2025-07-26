@@ -1,50 +1,55 @@
-import axios from 'axios';
-import { API_BASE } from '../config/env';
+import API from './axiosInstance'; // Use the central, configured axios instance for all calls
 
-const API_URL = `${API_BASE}/api/translations`;
-
-// --- THIS IS THE CORRECTED FUNCTION ---
+/**
+ * REQ-9, 10, 11: Get translations with pagination and filtering.
+ * @param {number} page - The current page number.
+ * @param {number} limit - The number of items per page.
+ * @param {object} filters - An object containing filter criteria (e.g., { key, language, projectId }).
+ * @returns {Promise} - The axios promise for the request.
+ */
 const getTranslations = (page = 1, limit = 10, filters = {}) => {
-  // 1. Start with the base pagination parameters.
-  const params = {
-    page,
-    limit,
-  };
-
-  // 2. Add the filter parameters to the same object.
-  //    The backend controller expects `key` and `language`.
-  if (filters.key) {
-    params.key = filters.key;
-  }
-  if (filters.language) {
-    params.language = filters.language;
-  }
-  
-  // 3. Pass the entire `params` object to axios.
-  //    Axios will automatically serialize this into a URL query string,
-  //    e.g., /api/translations?page=1&limit=10&language=fr&key=welcome
-  return axios.get(API_URL, { params });
+    const params = {
+        page,
+        limit,
+        ...filters
+    };
+    // All API calls now go through the secure instance
+    return API.get('/translations', { params });
 };
 
-
-// --- The rest of the file remains unchanged ---
+/**
+ * REQ-8: Add a new translation.
+ * @param {object} translationData - The data for the new translation.
+ * @returns {Promise} - The axios promise for the request.
+ */
 const addTranslation = (translationData) => {
-  return axios.post(API_URL, translationData);
+    return API.post('/translations', translationData);
 };
 
+/**
+ * REQ-8: Update an existing translation.
+ * @param {string} id - The ID of the translation to update.
+ * @param {object} updatedData - The new data for the translation.
+ * @returns {Promise} - The axios promise for the request.
+ */
 const updateTranslation = (id, updatedData) => {
-  return axios.put(`${API_URL}/${id}`, updatedData);
+    return API.put(`/translations/${id}`, updatedData);
 };
 
+/**
+ * REQ-12: Delete a translation.
+ * @param {string} id - The ID of the translation to delete.
+ * @returns {Promise} - The axios promise for the request.
+ */
 const deleteTranslation = (id) => {
-    return axios.delete(`${API_URL}/${id}`);
+    return API.delete(`/translations/${id}`);
 };
 
 const translationService = {
-  getTranslations,
-  addTranslation,
-  updateTranslation,
-  deleteTranslation,
+    getTranslations,
+    addTranslation,
+    updateTranslation,
+    deleteTranslation,
 };
 
 export default translationService;

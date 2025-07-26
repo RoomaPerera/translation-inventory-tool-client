@@ -12,9 +12,13 @@ export const useLogin = () => {
         setError(null);
         try {
             const response = await loginUser({ email, password });
-            login({ email: response.data.email });
-            setIsLoading(false);
-            return true;
+        if (response.data.user) {
+                login(response.data.user);
+                setIsLoading(false);
+                return true;
+            } else {
+                throw new Error("Login response did not include user data.");
+            }
         } catch (err) {
             setError(err.response?.data?.error || err.message);
             setIsLoading(false);

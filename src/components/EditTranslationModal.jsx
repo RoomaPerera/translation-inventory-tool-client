@@ -3,6 +3,8 @@ import useDebounce from "../hooks/useDebounce"; // Import the debounce hook
 import TranslationHelper from "./home/TranslationHelper"; // Import the helper panel
 import nlpService from "../services/nlpService";
 import translationService from "../services/translationService";
+import { useAuthContext } from '../hooks/useAuthContext';
+import { useCollaboration } from '../hooks/useCollaboration';
 import {
     ConnectionStatus,
     ActiveUsers,
