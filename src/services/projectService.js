@@ -133,7 +133,47 @@ const projectService = {
       console.error(`❌ Failed to fetch languages for project ${id}:`, error);
       throw handleApiError(error);
     }
+  },
+  // Add these to your projectService object:
+
+// Set default language for a project
+setProjectDefaultLanguage: async (projectId, languageId) => {
+  try {
+    console.log(`Setting default language for project ${projectId}:`, languageId);
+    const response = await apiClient.put(`/projects/${projectId}/default-language`, {
+      languageId
+    });
+    console.log('Default language set successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to set default language for project ${projectId}:`, error);
+    throw handleApiError(error);
   }
+},
+
+// Get default language for a project
+getProjectDefaultLanguage: async (projectId) => {
+  try {
+    const response = await apiClient.get(`/projects/${projectId}/default-language`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to get default language for project ${projectId}:`, error);
+    throw handleApiError(error);
+  }
+},
+
+// Remove default language from a project
+removeProjectDefaultLanguage: async (projectId) => {
+  try {
+    console.log(`Removing default language from project ${projectId}`);
+    const response = await apiClient.delete(`/projects/${projectId}/default-language`);
+    console.log('Default language removed successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to remove default language from project ${projectId}:`, error);
+    throw handleApiError(error);
+  }
+}
 };
 
 // Helper function to handle API errors
