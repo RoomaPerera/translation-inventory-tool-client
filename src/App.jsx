@@ -15,7 +15,7 @@ import Settings from './pages/Settings';
 import ProjectAndLanguageSettings from './pages/ProjectAndLanguageSettings';
 import EditProjectForm from './components/ProjectLanguageComponents/EditProjectForm';
 import ProjectDetails from './pages/ProjectDetails';
-//import Analytics from './pages/Analytics';
+import Analytics from './pages/Analytics';
 
 function App() {
     const { authReady } = useAuthContext();
@@ -45,7 +45,7 @@ function App() {
                     <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
                     <Route path="/project-details" element={<ProjectDetails />} />
                     {/* {/ <Route path="/settings/projects/edit/:id" element={<EditProjectForm />} /> */} 
-                    {/* <Route path="/analytics" element={<Analytics />} /> */}
+                    <Route path="/analytics" element={<Analytics />} />
                     <Route path="" element={<Navigate to="/" replace />} />
                     {/* {/ <Route path="/navbar" element={<Navbar user={user} />} /> */} 
                 </Route>
