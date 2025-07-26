@@ -35,7 +35,13 @@ export const AuthContextProvider = ({ children }) => {
       }
     } catch (error) {
       // Cookie is invalid/expired or user is not authenticated
-      console.log("Auth check failed:", error.response?.data || error.message);
+      // This is normal when user is not logged in, so we don't log it as an error
+      if (error.response?.status !== 401) {
+        console.log(
+          "Auth check failed:",
+          error.response?.data || error.message
+        );
+      }
       dispatch({ type: "AUTH_READY" });
     }
   };
@@ -92,11 +98,4 @@ export const AuthContextProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context)
-    throw new Error("useAuthContext must be used inside AuthContextProvider");
-  return context;
 };
