@@ -81,7 +81,7 @@ const Home = () => {
     const handleAddNew = () => setAddModalOpen(true);
     const handleOpenLangModal = () => setLangModalOpen(true);
     const handleEdit = (translation) => { setEditingTranslation(translation); setEditModalOpen(true); };
-    const handleDelete = async (id) => { if (window.confirm('Are you sure?')) { await translationService.deleteTranslation(id); fetchTranslations(); } };
+    const handleDelete = async (id) => { await translationService.deleteTranslation(id); fetchTranslations(); };
 
     const isAnyModalOpen = isAddModalOpen || isEditModalOpen || isLangModalOpen;
 

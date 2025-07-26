@@ -79,17 +79,36 @@ const AllEntries = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this translation?')) {
-            try {
-                await translationService.deleteTranslation(id);
-                fetchTranslations(currentPage);
-            } catch (err) {
-                alert('Failed to delete translation.');
-            }
+        try {
+            await translationService.deleteTranslation(id);
+            fetchTranslations(currentPage);
+        } catch (err) {
+            alert('Failed to delete translation.');
         }
     };
 
     const isAnyModalOpen = isEditModalOpen;
+
+    // Role-based access control - only allow admin and developer roles
+    if (!user) {
+        return (
+            <div className="flex flex-col h-full p-5">
+                <div className="p-8 text-center text-gray-500">Loading...</div>
+            </div>
+        );
+    }
+
+    const allowedRoles = ["Admin", "admin", "Developer", "developer"];
+    if (!allowedRoles.includes(user.role)) {
+        return (
+            <div className="flex flex-col h-full p-5">
+                <div className="p-8 text-center">
+                    <div className="text-red-600 text-lg font-semibold mb-2">Access Denied</div>
+                    <div className="text-gray-600">This page is restricted to admins and developers only.</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

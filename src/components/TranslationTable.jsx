@@ -1,8 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DestructiveButton } from './reusableComponents/DestructiveButton'; // Import the new button
 import Button from './reusableComponents/Button';
+import ConfirmModal from './UserListComponents/ConfirmModal';
 
 const TranslationTable = ({ translations = [], onEdit, onDelete }) => {
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        translationId: null,
+        translationKey: ''
+    });
+
+    const handleDeleteClick = (translation) => {
+        setConfirmModal({
+            open: true,
+            translationId: translation._id,
+            translationKey: translation.translationKey
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (confirmModal.translationId) {
+            onDelete(confirmModal.translationId);
+        }
+        setConfirmModal({ open: false, translationId: null, translationKey: '' });
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmModal({ open: false, translationId: null, translationKey: '' });
+    };
+
     return (
         <div className="overflow-x-auto"> {/* Ensures table is responsive */}
             <table className="min-w-full">
@@ -38,7 +64,7 @@ const TranslationTable = ({ translations = [], onEdit, onDelete }) => {
                                         Edit
                                     </Button>
                                     <DestructiveButton
-                                        onClick={() => onDelete(t._id)}
+                                        onClick={() => handleDeleteClick(t)}
                                         variant="outline"
                                         className="!py-1 !px-3"
                                     >
@@ -56,6 +82,14 @@ const TranslationTable = ({ translations = [], onEdit, onDelete }) => {
                     )}
                 </tbody>
             </table>
+
+            <ConfirmModal
+                open={confirmModal.open}
+                title="Delete Translation"
+                message={`Are you sure you want to delete the translation for "${confirmModal.translationKey}"? This action cannot be undone.`}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
         </div>
     );
 };
