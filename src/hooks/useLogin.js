@@ -12,11 +12,13 @@ export const useLogin = () => {
         setError(null);
         try {
             const response = await loginUser({ email, password });
-            // The cookie is automatically set by the server
-            // We just need to update the context with user data
-            login(response.data.user);
-            setIsLoading(false);
-            return true;
+        if (response.data.user) {
+                login(response.data.user);
+                setIsLoading(false);
+                return true;
+            } else {
+                throw new Error("Login response did not include user data.");
+            }
         } catch (err) {
             setError(err.response?.data?.error || err.message);
             setIsLoading(false);

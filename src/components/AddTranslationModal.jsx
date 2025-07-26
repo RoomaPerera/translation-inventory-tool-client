@@ -6,7 +6,7 @@ import translationService from '../services/translationService';
 import { useAuthContext } from '../hooks/useAuthContext';
 import '../styles/modal.css';
 
-const AddTranslationModal = ({ isOpen, onClose, onSave }) => {
+const AddTranslationModal = ({ isOpen, onClose, onSave, projectId }) => {
     const { user } = useAuthContext();
     const [formData, setFormData] = useState({
         translationKey: '',
@@ -23,6 +23,21 @@ const AddTranslationModal = ({ isOpen, onClose, onSave }) => {
 
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+   // Effect to clear form when modal is opened/closed
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                translationKey: '',
+                language: '',
+                translatedText: '',
+                product: 'Rubix',
+            });
+            setError('');
+            setSuggestions([]);
+            setGlossary([]);
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         // This effect runs when the debounced value of `translationKey` changes
@@ -66,7 +81,14 @@ const AddTranslationModal = ({ isOpen, onClose, onSave }) => {
         e.preventDefault();
         setError('');
         setIsSaving(true);
-        const submissionData = { ...formData, createdBy: user?.userName || 'System' };
+// FIXED: Include projectId in the submission data
+        if (!projectId) {
+            setError('Cannot save translation without a project ID.');
+            setIsSaving(false);
+            return;
+        }
+
+        const submissionData = { ...formData, createdBy: user?.userName || 'System', projectId };
 
         try {
             await translationService.addTranslation(submissionData);
