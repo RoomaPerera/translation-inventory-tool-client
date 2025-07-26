@@ -117,7 +117,7 @@ const ProjectAndLanguageSettings = () => {
     setProjects(projects.filter(project => project._id !== projectId));
     setShowDeleteModal(false);
     setProjectToDelete(null);
-    showNotification('✅ Project deleted successfully!', 'success');
+    showNotification('Project deleted successfully!', 'success');
   };
 
   const handleCancelDelete = () => {
@@ -397,10 +397,10 @@ const ProjectAndLanguageSettings = () => {
     <div className="animate-fade-in">
       <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
-          <h2 className="text-lg sm:text-xl font-semibold text-blue-800">Project Overview</h2>
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
+          <h1 className="text-lg sm:text-xl font-semibold text-black-800">Project Overview</h1>
         </div>
-        <p className="text-blue-600/80 text-sm">
+        <p className="text-black-600/80 text">
           Manage your translation projects and access detailed project information
         </p>
       </div>
@@ -446,9 +446,9 @@ const ProjectAndLanguageSettings = () => {
                   <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded-lg text-xs font-medium">
                     {stats.projectsWithLanguages} Active
                   </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
+                  {/* <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
                     {stats.averageLanguagesPerProject} Avg Languages
-                  </span>
+                  </span> */}
                 </div>
               )}
             </div>
@@ -487,10 +487,10 @@ const ProjectAndLanguageSettings = () => {
                 <div className="text-2xl font-bold text-indigo-600">{stats.totalLanguages}</div>
                 <div className="text-sm text-slate-600">Available Languages</div>
               </div>
-              <div className="text-center">
+              {/* <div className="text-center">
                 <div className="text-2xl font-bold text-slate-600">{stats.averageLanguagesPerProject}</div>
                 <div className="text-sm text-slate-600">Avg per Project</div>
-              </div>
+              </div> */}
             </div>
           </div>
         )}

@@ -7,7 +7,7 @@ const HomeToolbar = ({ onAddNewTranslation, projectLanguages = [], onDownload, o
     
     // Reset language selection when project languages change
     useEffect(() => {
-        console.log('🔵 HomeToolbar: Project languages changed:', projectLanguages);
+        console.log('HomeToolbar: Project languages changed:', projectLanguages);
         setSelectedLanguage('all');
         if (onLanguageFilter) {
             onLanguageFilter('all');
@@ -30,13 +30,13 @@ const HomeToolbar = ({ onAddNewTranslation, projectLanguages = [], onDownload, o
             { value: 'all', label: 'No languages assigned' }
           ];
     
-    console.log('🔵 HomeToolbar: Language options:', langOptions);
+    console.log('HomeToolbar: Language options:', langOptions);
     
     const typeOptions = [{ value: 'translations', label: 'Translations' }]; // For the restored dropdown
 
     // Handle language selection
     const handleLanguageSelect = (value) => {
-        console.log('🔵 HomeToolbar: Language selected:', value);
+        console.log('HomeToolbar: Language selected:', value);
         setSelectedLanguage(value);
         if (onLanguageFilter) {
             onLanguageFilter(value);

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaHome, FaList, FaClock, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaList, FaClock, FaCog, FaSignOutAlt, FaChartLine } from 'react-icons/fa';
 import gtnLogo from '../assets/images/gtn-logo.png';
 import { useAuthContext } from '../hooks/useAuthContext';
-import authService from '../services/authService'; // Import the service
+import authService from '../services/authService';
 
 const Sidebar = () => {
     const { user, dispatch } = useAuthContext();
@@ -40,6 +40,11 @@ const Sidebar = () => {
                     <li className="mb-4">
                         <Link to="/all-entries" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
                             <FaList /> All Entries
+                        </Link>
+                    </li>
+                    <li className="mb-4">
+                        <Link to="/analytics" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+                            <FaChartLine /> Analytics
                         </Link>
                     </li>
                     <li className="mb-4">
