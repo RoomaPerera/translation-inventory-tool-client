@@ -7,7 +7,7 @@ import languageService from '../services/languageService';
 import TabNavigation from '../components/reusableComponents/TabNavigation';
 import ProjectManagement from '../components/ProjectLanguageComponents/ProjectManagement';
 import LanguageManagement from '../components/ProjectLanguageComponents/LanguageManagement';
-import QuickActions from '../components/ProjectLanguageComponents/QuickActionCard';
+import QuickActions from '../components/ProjectLanguageComponents/QuickActions';
 import Modal from '../components/reusableComponents/Modal';
 
 // Import forms
@@ -149,6 +149,154 @@ const ProjectAndLanguageSettings = () => {
     setShowDeleteModal(false);
   };
 
+// Enhanced handleDeleteLanguage function with default language protection
+const handleDeleteLanguage = async (language) => {
+  try {
+    console.log('Deleting language:', language);
+    
+    // Get the language ID (handle both _id and id)
+    const languageId = language._id || language.id;
+    const languageCode = language.code;
+    const languageName = language.name || language.code;
+    
+    if (!languageId) {
+      throw new Error('Language ID is missing');
+    }
+    
+    // Step 1: Check if this language is used as default language in any project
+    const projectsUsingAsDefault = projects.filter(project => {
+      if (!project.defaultLanguage) return false;
+      
+      // Handle both string and object formats for defaultLanguage
+      if (typeof project.defaultLanguage === 'string') {
+        return project.defaultLanguage === languageCode;
+      } else if (typeof project.defaultLanguage === 'object') {
+        return project.defaultLanguage.code === languageCode || 
+               (project.defaultLanguage._id || project.defaultLanguage.id) === languageId;
+      }
+      return false;
+    });
+    
+    // If language is used as default, prevent deletion and show warning
+    if (projectsUsingAsDefault.length > 0) {
+      const projectNames = projectsUsingAsDefault.map(p => p.name).join(', ');
+      const projectWord = projectsUsingAsDefault.length === 1 ? 'project' : 'projects';
+      
+      showNotification(
+        `❌ Cannot delete language "${languageName}". It is set as the default language for ${projectsUsingAsDefault.length} ${projectWord}: ${projectNames}. Please change the default language for these projects first.`,
+        'error'
+      );
+      
+      // Throw error to stop the deletion process
+      throw new Error(`Language is used as default language in ${projectsUsingAsDefault.length} project(s)`);
+    }
+    
+    // Step 2: Delete the language from the database
+    console.log(`Calling languageService.deleteLanguage with ID: ${languageId}`);
+    await languageService.deleteLanguage(languageId);
+    console.log('Language deleted from database successfully');
+    
+    // Step 3: Remove the language from local state
+    setLanguages(prev => {
+      const filtered = prev.filter(lang => 
+        (lang._id || lang.id) !== languageId
+      );
+      console.log(`Removed language from state. Before: ${prev.length}, After: ${filtered.length}`);
+      return filtered;
+    });
+    
+    // Step 4: Update all projects that use this language (but not as default)
+    const updatedProjects = [];
+    const projectsToUpdate = projects.filter(project => {
+      if (!project.languages || project.languages.length === 0) return false;
+      
+      return project.languages.some(lang => {
+        if (typeof lang === 'string') {
+          return lang === languageCode;
+        } else if (typeof lang === 'object') {
+          return lang.code === languageCode || (lang._id || lang.id) === languageId;
+        }
+        return false;
+      });
+    });
+    
+    console.log(`Found ${projectsToUpdate.length} projects using this language`);
+    
+    for (const project of projectsToUpdate) {
+      try {
+        console.log(`Updating project: ${project.name} (ID: ${project._id})`);
+        
+        // Remove the language from the project's languages array
+        const updatedLanguages = project.languages.filter(lang => {
+          if (typeof lang === 'string') {
+            return lang !== languageCode;
+          } else if (typeof lang === 'object') {
+            return lang.code !== languageCode && (lang._id || lang.id) !== languageId;
+          }
+          return true;
+        });
+        
+        console.log(`Project ${project.name}: Languages before: ${project.languages.length}, after: ${updatedLanguages.length}`);
+        
+        // Update the project in the database
+        const updatedProject = await projectService.updateProject(project._id, {
+          ...project,
+          languages: updatedLanguages
+        });
+        
+        updatedProjects.push(updatedProject);
+        console.log(`Successfully updated project: ${project.name}`);
+        
+      } catch (projectError) {
+        console.error(`Failed to update project ${project.name}:`, projectError);
+        // Extract error message from your service's error structure
+        const errorMessage = projectError.message || 
+          (projectError.response?.data?.message) || 
+          'Unknown error';
+        showNotification(`Warning: Failed to remove language from project "${project.name}": ${errorMessage}`, 'error');
+      }
+    }
+    
+    // Step 5: Update the projects state with the modified projects
+    if (updatedProjects.length > 0) {
+      setProjects(prev => prev.map(project => {
+        const updatedProject = updatedProjects.find(up => up._id === project._id);
+        return updatedProject || project;
+      }));
+      
+      showNotification(
+        `🗑️ Language "${languageName}" deleted and removed from ${updatedProjects.length} project(s)!`, 
+        'success'
+      );
+    } else {
+      showNotification(`🗑️ Language "${languageName}" deleted successfully!`, 'success');
+    }
+    
+  } catch (error) {
+    console.error('Failed to delete language:', error);
+    
+    // Don't show duplicate error messages for default language protection
+    if (!error.message?.includes('used as default language')) {
+      // Extract error message from your service's error structure
+      let errorMessage = 'Unknown error occurred';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      showNotification(
+        `Failed to delete language: ${errorMessage}`, 
+        'error'
+      );
+    }
+    
+    throw error; // Re-throw to let the LanguageManagement component handle it
+  }
+};
+
   const closeModal = () => {
     setShowAddForm(false);
     setShowAddLanguageForm(false);
@@ -159,10 +307,10 @@ const ProjectAndLanguageSettings = () => {
   };
 
   const getModalTitle = () => {
-    if (showAddForm) return '🚀 Add New Project';
-    if (showEditForm) return '✏️ Edit Project';
-    if (showAddLanguageForm) return '🌐 Add New Language';
-    if (showDeleteModal) return '🗑️ Delete Project';
+    if (showAddForm) return 'Add New Project';
+    if (showEditForm) return 'Edit Project';
+    if (showAddLanguageForm) return 'Add New Language';
+    if (showDeleteModal) return 'Delete Project';
     return '';
   };
 
@@ -173,7 +321,7 @@ const ProjectAndLanguageSettings = () => {
           onSuccess={async () => {
             closeModal();
             await fetchProjects();
-            showNotification('🎉 Project added successfully!', 'success');
+            showNotification('Project added successfully!', 'success');
           }} 
           availableLanguages={languages}
         />
@@ -187,7 +335,7 @@ const ProjectAndLanguageSettings = () => {
           onSuccess={async () => {
             closeModal();
             await fetchProjects();
-            showNotification('✨ Project updated successfully!', 'success');
+            showNotification('Project updated successfully!', 'success');
           }} 
           availableLanguages={languages}
         />
@@ -200,7 +348,7 @@ const ProjectAndLanguageSettings = () => {
           onSuccess={async () => {
             closeModal();
             await fetchLanguages();
-            showNotification('🌍 Language added successfully!', 'success');
+            showNotification('Language added successfully!', 'success');
           }}
           existingLanguages={languages}
         />
@@ -254,6 +402,7 @@ const ProjectAndLanguageSettings = () => {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -360,6 +509,7 @@ const ProjectAndLanguageSettings = () => {
                   languages={languages}
                   isLoadingLanguages={isLoadingLanguages}
                   onAddLanguage={handleAddLanguage}
+                  onDeleteLanguage={handleDeleteLanguage}
                 />
               </div>
             </div>

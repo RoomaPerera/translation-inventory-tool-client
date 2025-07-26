@@ -17,14 +17,14 @@ const apiClient = axios.create({
 // Add a request interceptor for debugging
 apiClient.interceptors.request.use(
   config => {
-    console.log(`🔵 Making ${config.method.toUpperCase()} request to: ${config.baseURL}${config.url}`);
+    console.log(`Making ${config.method.toUpperCase()} request to: ${config.baseURL}${config.url}`);
     if (config.data) {
-      console.log('🔵 Request payload:', config.data);
+      console.log('Request payload:', config.data);
     }
     return config;
   },
   error => {
-    console.error('❌ Request error:', error);
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -32,11 +32,11 @@ apiClient.interceptors.request.use(
 // Add a response interceptor for debugging and error handling
 apiClient.interceptors.response.use(
   response => {
-    console.log(`✅ Response from ${response.config.url}:`, response.status, response.data);
+    console.log(`Response from ${response.config.url}:`, response.status, response.data);
     return response;
   },
   error => {
-    console.error('❌ Response error:', error.response?.status, error.response?.data || error.message);
+    console.error('Response error:', error.response?.status, error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -49,7 +49,7 @@ const languageService = {
   // Get all languages
   getLanguages: async () => {
     try {
-      console.log('🔵 Fetching all languages...');
+      console.log('Fetching all languages...');
       const response = await apiClient.get('/languages');
       
       // Handle different response formats
@@ -60,10 +60,10 @@ const languageService = {
         languages = response.data.data;
       }
       
-      console.log('✅ Languages fetched successfully:', languages.length, 'languages');
+      console.log('Languages fetched successfully:', languages.length, 'languages');
       return Array.isArray(languages) ? languages : [];
     } catch (error) {
-      console.error('❌ Failed to fetch languages:', error);
+      console.error('Failed to fetch languages:', error);
       throw handleApiError(error);
     }
   },
@@ -103,12 +103,12 @@ const languageService = {
   // Update language
   updateLanguage: async (id, data) => {
     try {
-      console.log(`🔵 Updating language ${id}:`, data);
+      console.log(`Updating language ${id}:`, data);
       const response = await apiClient.put(`/languages/${id}`, data);
-      console.log(`✅ Language ${id} updated successfully:`, response.data);
+      console.log(`Language ${id} updated successfully:`, response.data);
       return response.data;
     } catch (error) {
-      console.error(`❌ Failed to update language ${id}:`, error);
+      console.error(`Failed to update language ${id}:`, error);
       throw handleApiError(error);
     }
   },
@@ -116,12 +116,12 @@ const languageService = {
   // Delete language
   deleteLanguage: async (id) => {
     try {
-      console.log(`🔵 Deleting language ${id}...`);
+      console.log(`Deleting language ${id}...`);
       const response = await apiClient.delete(`/languages/${id}`);
-      console.log(`✅ Language ${id} deleted successfully`);
+      console.log(`Language ${id} deleted successfully`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Failed to delete language ${id}:`, error);
+      console.error(`Failed to delete language ${id}:`, error);
       throw handleApiError(error);
     }
   },
@@ -129,7 +129,7 @@ const languageService = {
   // Search languages by name or code
   searchLanguages: async (query) => {
     try {
-      console.log(`🔵 Searching languages with query: ${query}`);
+      console.log(`Searching languages with query: ${query}`);
       const response = await apiClient.get(`/languages/search?q=${encodeURIComponent(query)}`);
       
       let languages = response.data;
@@ -139,10 +139,10 @@ const languageService = {
         languages = response.data.data;
       }
       
-      console.log(`✅ Language search completed: ${languages.length} results`);
+      console.log(`Language search completed: ${languages.length} results`);
       return Array.isArray(languages) ? languages : [];
     } catch (error) {
-      console.error('❌ Failed to search languages:', error);
+      console.error('Failed to search languages:', error);
       throw handleApiError(error);
     }
   },
@@ -150,12 +150,12 @@ const languageService = {
   // Check if language code is available
   checkLanguageCodeAvailability: async (code) => {
     try {
-      console.log(`🔵 Checking availability of language code: ${code}`);
+      console.log(`Checking availability of language code: ${code}`);
       const response = await apiClient.get(`/languages/check-code/${code}`);
-      console.log(`✅ Language code availability checked:`, response.data);
+      console.log(`Language code availability checked:`, response.data);
       return response.data;
     } catch (error) {
-      console.error(`❌ Failed to check language code availability:`, error);
+      console.error(`Failed to check language code availability:`, error);
       throw handleApiError(error);
     }
   },
@@ -163,15 +163,15 @@ const languageService = {
   // Get languages with statistics (if backend supports it)
   getLanguagesWithStats: async () => {
     try {
-      console.log('🔵 Fetching languages with statistics...');
+      console.log('Fetching languages with statistics...');
       const response = await apiClient.get('/languages/stats');
-      console.log('✅ Languages with stats fetched successfully');
+      console.log('Languages with stats fetched successfully');
       return response.data;
     } catch (error) {
-      console.error('❌ Failed to fetch languages with stats:', error);
+      console.error('Failed to fetch languages with stats:', error);
       // Fall back to regular getLanguages if stats endpoint doesn't exist
       if (error.response?.status === 404) {
-        console.log('📝 Stats endpoint not available, falling back to regular languages');
+        console.log('Stats endpoint not available, falling back to regular languages');
         return await languageService.getLanguages();
       }
       throw handleApiError(error);
@@ -181,26 +181,26 @@ const languageService = {
   // Bulk operations
   bulkAddLanguages: async (languagesArray) => {
     try {
-      console.log(`🔵 Bulk adding ${languagesArray.length} languages...`);
+      console.log(`Bulk adding ${languagesArray.length} languages...`);
       const response = await apiClient.post('/languages/bulk', { languages: languagesArray });
-      console.log(`✅ Bulk language addition completed:`, response.data);
+      console.log(`Bulk language addition completed:`, response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Failed to bulk add languages:', error);
+      console.error('Failed to bulk add languages:', error);
       throw handleApiError(error);
     }
   },
   
   bulkDeleteLanguages: async (languageIds) => {
     try {
-      console.log(`🔵 Bulk deleting ${languageIds.length} languages...`);
+      console.log(`Bulk deleting ${languageIds.length} languages...`);
       const response = await apiClient.delete('/languages/bulk', { 
         data: { ids: languageIds } 
       });
-      console.log(`✅ Bulk language deletion completed`);
+      console.log(`Bulk language deletion completed`);
       return response.data;
     } catch (error) {
-      console.error('❌ Failed to bulk delete languages:', error);
+      console.error('Failed to bulk delete languages:', error);
       throw handleApiError(error);
     }
   }
@@ -209,8 +209,8 @@ const languageService = {
 // Helper function to handle API errors with enhanced error messages
 function handleApiError(error) {
   if (error.response) {
-    console.error('❌ Response data:', error.response.data);
-    console.error('❌ Response status:', error.response.status);
+    console.error('Response data:', error.response.data);
+    console.error('Response status:', error.response.status);
     
     // Handle specific error status codes
     switch (error.response.status) {
@@ -248,12 +248,12 @@ function handleApiError(error) {
         };
     }
   } else if (error.request) {
-    console.error('❌ No response received:', error.request);
+    console.error('No response received:', error.request);
     return { 
       message: 'No response from server. Please check if your backend is running and accessible at ' + API_URL 
     };
   } else {
-    console.error('❌ Error message:', error.message);
+    console.error('Error message:', error.message);
     return { 
       message: `Network error: ${error.message}` 
     };
