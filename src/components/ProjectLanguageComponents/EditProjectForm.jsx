@@ -11,43 +11,57 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
   });
 
   const [showLanguageSection, setShowLanguageSection] = useState(false);
-  const [newLanguage, setNewLanguage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [languageMessage, setLanguageMessage] = useState('');
+  const [recentlyAdded, setRecentlyAdded] = useState([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const addLanguage = () => {
-    if (!newLanguage.trim()) return;
-    const newLangs = newLanguage
-      .split(',')
-      .map((l) => l.trim())
-      .filter((l) => l && !formData.languages.includes(l));
-    setFormData((prev) => ({
-      ...prev,
-      languages: [...prev.languages, ...newLangs],
-    }));
-    setNewLanguage('');
+  const showTemporaryMessage = (message, type = 'success') => {
+    setLanguageMessage({ text: message, type });
+    setTimeout(() => {
+      setLanguageMessage('');
+    }, 3000);
   };
 
   const removeLanguage = (index) => {
+    const removedLang = formData.languages[index];
     setFormData((prev) => ({
       ...prev,
       languages: prev.languages.filter((_, i) => i !== index),
     }));
+    showTemporaryMessage(`Language "${removedLang}" removed`, 'info');
   };
 
   const toggleLanguage = (langCode) => {
+    const isAdding = !formData.languages.includes(langCode);
+    
     setFormData((prev) => ({
       ...prev,
       languages: prev.languages.includes(langCode)
         ? prev.languages.filter((c) => c !== langCode)
         : [...prev.languages, langCode],
     }));
+
+    // Show feedback for toggle action
+    const langName = availableLanguages.find(lang => lang.code === langCode)?.name || langCode;
+    const message = isAdding 
+      ? `${langName} (${langCode}) added` 
+      : `${langName} (${langCode}) removed`;
+    showTemporaryMessage(message, isAdding ? 'success' : 'info');
+
+    // Highlight recently toggled language
+    if (isAdding) {
+      setRecentlyAdded([langCode]);
+      setTimeout(() => {
+        setRecentlyAdded([]);
+      }, 2000);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -110,101 +124,117 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
 
       {/* Toggle Button - Left aligned */}
       <div>
-        <label className="block mb-1 font-medium text-gray-700">Languages</label>
+        <label className="block mb-1 font-medium text-gray-700">
+          Languages {formData.languages.length > 0 && (
+            <span className="text-indigo-600 text-xs">({formData.languages.length} selected)</span>
+          )}
+        </label>
         <button
           type="button"
           onClick={() => setShowLanguageSection(!showLanguageSection)}
-          className="text-indigo-600 hover:underline text-sm mb-2"
+          className="text-indigo-600 hover:underline text-sm mb-2 flex items-center space-x-1"
         >
-          {showLanguageSection ? 'Hide Languages' : 'Edit Languages'}
+          <span>{showLanguageSection ? 'Hide Languages' : 'Edit Languages'}</span>
+          <span className="text-xs">{showLanguageSection ? '▲' : '▼'}</span>
         </button>
       </div>
 
-
       {/* Conditionally Show Language Section */}
       {showLanguageSection && (
-        <div>
-          <label className="block mb-1 font-medium">Languages</label>
+        <div className="space-y-3">
+          {/* Language feedback message */}
+          {languageMessage && (
+            <div className={`p-2 rounded text-sm transition-all duration-300 ${
+              languageMessage.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
+              languageMessage.type === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
+              languageMessage.type === 'warning' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+              'bg-blue-100 text-blue-700 border border-blue-200'
+            }`}>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs">
+                  {languageMessage.type === 'success' ? '✅' : 
+                   languageMessage.type === 'error' ? '❌' : 
+                   languageMessage.type === 'warning' ? '⚠️' : 'ℹ️'}
+                </span>
+                <span>{languageMessage.text}</span>
+              </div>
+            </div>
+          )}
 
-          <div className="flex flex-wrap gap-1 mb-2">
-            {availableLanguages.map((lang) => (
-              <button
-                type="button"
-                key={lang._id}
-                onClick={() => toggleLanguage(lang.code)}
-                title={lang.name} // This shows the language name on hover
-                className={`px-2 py-1 rounded text-xs border ${formData.languages.includes(lang.code)
-                    ? 'bg-indigo-200 border-indigo-400 text-indigo-800'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-indigo-50'
+          <div>
+            <label className="block mb-2 font-medium text-sm">Available Languages</label>
+            <div className="flex flex-wrap gap-1 mb-3">
+              {availableLanguages.map((lang) => (
+                <button
+                  type="button"
+                  key={lang._id}
+                  onClick={() => toggleLanguage(lang.code)}
+                  title={`${lang.name} (${lang.code})`}
+                  className={`px-2 py-1 rounded text-xs border transition-all duration-200 ${
+                    formData.languages.includes(lang.code)
+                      ? 'bg-indigo-200 border-indigo-400 text-indigo-800 shadow-sm'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300'
+                  } ${
+                    recentlyAdded.includes(lang.code) ? 'ring-2 ring-green-300 ring-opacity-50' : ''
                   }`}
-              >
-                {lang.code}
-              </button>
-
-            ))}
+                >
+                  {lang.code}
+                  {formData.languages.includes(lang.code) && (
+                    <span className="ml-1 text-indigo-600">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Selected Language Tags */}
           {formData.languages.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-1">
-              {formData.languages.map((lang, idx) => (
-                <span
-                  key={idx}
-                  className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full flex items-center text-xs"
-                >
-                  {lang}
-                  <button
-                    type="button"
-                    onClick={() => removeLanguage(idx)}
-                    className="ml-1 text-indigo-500 hover:text-red-600"
+            <div>
+              <label className="block mb-2 font-medium text-sm">Selected Languages</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.languages.map((lang, idx) => (
+                  <span
+                    key={idx}
+                    className={`bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full flex items-center text-xs border border-indigo-200 transition-all duration-200 ${
+                      recentlyAdded.includes(lang) ? 'ring-2 ring-green-300 ring-opacity-50 bg-green-100 text-green-800' : ''
+                    }`}
                   >
-                    ×
-                  </button>
-                </span>
-              ))}
+                    {lang}
+                    <button
+                      type="button"
+                      onClick={() => removeLanguage(idx)}
+                      className="ml-1 text-indigo-500 hover:text-red-600 transition-colors"
+                      title={`Remove ${lang}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Manual Add Language */}
-          <div className="flex items-center mt-1">
-            <input
-              type="text"
-              value={newLanguage}
-              onChange={(e) => setNewLanguage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addLanguage();
-                }
-              }}
-              placeholder="EN, FR"
-              className="flex-1 px-2 py-1 text-sm border rounded-l focus:ring-indigo-500"
-            />
-            <button
-              type="button"
-              onClick={addLanguage}
-              className="bg-indigo-600 text-white text-sm px-3 py-1 rounded-r hover:bg-indigo-700"
-            >
-              Add
-            </button>
-          </div>
+
         </div>
       )}
 
-      <div className="flex justify-end pt-2 gap-2 border-t border-gray-200">
+      <div className="flex justify-end pt-4 gap-2 border-t border-gray-200">
         <button
           type="button"
           onClick={() => onSuccess && onSuccess()}
-          className="text-gray-700 bg-gray-200 px-3 py-1.5 rounded hover:bg-gray-300"
+          className="text-gray-700 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-indigo-600 text-white px-4 py-1.5 rounded hover:bg-indigo-700 disabled:bg-indigo-400"
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:bg-indigo-400 transition-colors flex items-center space-x-2"
         >
-          {isSubmitting ? 'Saving...' : 'Update'}
+          {isSubmitting && (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          )}
+          <span>{isSubmitting ? 'Saving...' : project?._id ? 'Update' : 'Create'}</span>
         </button>
       </div>
     </form>
