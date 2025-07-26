@@ -12,7 +12,8 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    languages: []
+    languages: [],
+    defaultLanguage: '' // New field for default language
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,11 +31,25 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
       [name]: value
     });
   };
-  
-  const removeLanguage = (index) => {
+
+  // Handle default language selection
+  const handleDefaultLanguageChange = (e) => {
+    const selectedCode = e.target.value;
     setFormData({
       ...formData,
-      languages: formData.languages.filter((_, i) => i !== index)
+      defaultLanguage: selectedCode
+    });
+  };
+  
+  const removeLanguage = (index) => {
+    const removedLanguage = formData.languages[index];
+    const newLanguages = formData.languages.filter((_, i) => i !== index);
+    
+    setFormData({
+      ...formData,
+      languages: newLanguages,
+      // Clear default language if the removed language was the default
+      defaultLanguage: formData.defaultLanguage === removedLanguage ? '' : formData.defaultLanguage
     });
   };
 
@@ -91,6 +106,11 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
       }
     }
   };
+
+  // Get available languages for default language dropdown (only assigned languages)
+  const getAssignedLanguageObjects = () => {
+    return availableLanguages.filter(lang => formData.languages.includes(lang.code));
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -102,6 +122,13 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
     // Validation
     if (!formData.name.trim()) {
       setError('Project name is required');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate default language if provided
+    if (formData.defaultLanguage && !formData.languages.includes(formData.defaultLanguage)) {
+      setError('Default language must be one of the assigned languages');
       setIsSubmitting(false);
       return;
     }
@@ -136,12 +163,14 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
         return;
       }
       
-      // Prepare project data - include user ID (required by backend)
+      // Prepare project data - include user ID and default language (required by backend)
       const projectData = {
-        ...formData,
         name: formData.name.trim(),
         description: formData.description.trim(),
-        createdBy: userId
+        languages: formData.languages,
+        createdBy: userId,
+        // Include default language only if one is selected
+        ...(formData.defaultLanguage && { defaultLanguage: formData.defaultLanguage })
       };
       
       console.log('Submitting project data:', projectData);
@@ -153,13 +182,20 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
         successMessage = 'Project created successfully! (Note: Email notifications could not be sent)';
       }
       
+      // Add default language info to success message if set
+      if (formData.defaultLanguage) {
+        const defaultLangName = availableLanguages.find(lang => lang.code === formData.defaultLanguage)?.name;
+        successMessage += ` Default language set to ${defaultLangName || formData.defaultLanguage}.`;
+      }
+      
       setSuccess(successMessage);
       
       // Reset form
       setFormData({
         name: '',
         description: '',
-        languages: []
+        languages: [],
+        defaultLanguage: ''
       });
       
       // Keep success message visible for 4 seconds before calling onSuccess
@@ -195,7 +231,8 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
           setFormData({
             name: '',
             description: '',
-            languages: []
+            languages: [],
+            defaultLanguage: ''
           });
           
           // Keep success message visible for 4 seconds before calling onSuccess
@@ -332,13 +369,24 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
                 {formData.languages.map((lang, index) => (
                   <div 
                     key={index} 
-                    className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md flex items-center"
+                    className={`px-3 py-1 rounded-md flex items-center ${
+                      formData.defaultLanguage === lang
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-indigo-100 text-indigo-700'
+                    }`}
                   >
-                    <span className="text-sm font-medium">{lang}</span>
+                    <span className="text-sm font-medium">
+                      {lang}
+                      {formData.defaultLanguage === lang && (
+                        <span className="ml-1 text-xs">(Default)</span>
+                      )}
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeLanguage(index)}
-                      className="ml-2 text-indigo-500 hover:text-indigo-700 focus:outline-none"
+                      className={`ml-2 hover:opacity-70 focus:outline-none ${
+                        formData.defaultLanguage === lang ? 'text-green-500' : 'text-indigo-500'
+                      }`}
                       title="Remove language"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -351,6 +399,32 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
             </div>
           )}
         </div>
+
+        {/* Default Language Selection */}
+        {formData.languages.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2 font-medium" htmlFor="defaultLanguage">
+              Default Language
+            </label>
+            <select
+              id="defaultLanguage"
+              name="defaultLanguage"
+              value={formData.defaultLanguage}
+              onChange={handleDefaultLanguageChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Select default language (optional)</option>
+              {getAssignedLanguageObjects().map((lang) => (
+                <option key={lang._id} value={lang.code}>
+                  {lang.name} ({lang.code})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              The default language will be used as the primary language for this project.
+            </p>
+          </div>
+        )}
         
         <div className="flex justify-end mt-6 space-x-3">
           <Button
