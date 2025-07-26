@@ -282,11 +282,8 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                     {lang.code}
                     {isSelected && (
                       <span className={`ml-1 ${isDefault ? 'text-green-600' : 'text-indigo-600'}`}>
-                        {isDefault ? '★' : '✓'}
+                        ✓
                       </span>
-                    )}
-                    {isDefault && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
                     )}
                   </button>
                 );
@@ -301,7 +298,7 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                 Selected Languages
                 {formData.defaultLanguage && (
                   <span className="text-xs text-green-600 ml-2">
-                    (★ = Default Language)
+                    ({getLanguageDisplayName(formData.defaultLanguage)} is set as default)
                   </span>
                 )}
               </label>
@@ -322,18 +319,15 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                       }`}
                     >
                       <span className="flex items-center">
-                        {isDefault && (
-                          <span className="mr-1 text-green-600 font-bold">★</span>
-                        )}
                         <span className="font-medium">{lang}</span>
                         {langObj && (
                           <span className="ml-1 text-xs opacity-75">({langObj.name})</span>
                         )}
-                        {isDefault && (
+                        {/* {isDefault && (
                           <span className="ml-2 text-xs bg-green-600 text-white px-1.5 py-0.5 rounded-full">
                             DEFAULT
                           </span>
-                        )}
+                        )} */}
                       </span>
                       <button
                         type="button"
@@ -345,11 +339,6 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                       >
                         ×
                       </button>
-                      {isDefault && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">★</span>
-                        </div>
-                      )}
                     </span>
                   );
                 })}
@@ -379,17 +368,12 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                 {getAssignedLanguageObjects().map((lang) => (
                   <option key={lang._id} value={lang.code}>
                     {lang.name} ({lang.code})
-                    {formData.defaultLanguage === lang.code ? ' ★ Current Default' : ''}
+                    {formData.defaultLanguage === lang.code ? ' - Current Default' : ''}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 The default language will be used as the primary language for this project.
-                {/* {formData.defaultLanguage && (
-                  <span className="text-green-600 font-medium">
-                    {' '}Currently set to {getLanguageDisplayName(formData.defaultLanguage)}.
-                  </span>
-                )} */}
               </p>
             </div>
           )}

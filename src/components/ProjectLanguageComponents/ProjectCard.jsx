@@ -63,7 +63,7 @@ const ProjectCard = ({
         )}
         
         {/* Default Language Section */}
-        {defaultLangInfo && (
+        {/* {defaultLangInfo && (
           <div className="mb-3">
             <h5 className={`text-sm font-medium ${textColor.replace('800', '700')} mb-2`}>
               Default Language
@@ -78,7 +78,7 @@ const ProjectCard = ({
               </span>
             </div>
           </div>
-        )}
+        )} */}
         
         {/* Languages Section */}
         <div>

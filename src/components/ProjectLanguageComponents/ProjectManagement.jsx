@@ -10,10 +10,12 @@ const ProjectManagement = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter projects by search term (case-insensitive search on project name)
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Sort projects by creation date (newest first) and then filter by search term
+  const filteredProjects = projects
+    .sort((a, b) => new Date(b.createdAt || b._id) - new Date(a.createdAt || a._id))
+    .filter(project =>
+      project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">

@@ -62,7 +62,7 @@ const DeleteLanguageModal = ({ language, isOpen, onClose, onConfirm, isDeleting 
   );
 };
 
-const LanguageManagement = ({ languages, isLoadingLanguages, onAddLanguage, onDeleteLanguage }) => {
+const LanguageManagement = ({ languages, isLoadingLanguages, onAddLanguage, onDeleteLanguage, onEditLanguage }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, language: null });
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,6 +76,13 @@ const LanguageManagement = ({ languages, isLoadingLanguages, onAddLanguage, onDe
   const handleDeleteClick = (language, e) => {
     e.stopPropagation();
     setDeleteModal({ isOpen: true, language });
+  };
+
+  const handleEditClick = (language, e) => {
+    e.stopPropagation();
+    if (onEditLanguage) {
+      onEditLanguage(language);
+    }
   };
 
   const handleDeleteConfirm = async (language) => {
@@ -164,27 +171,51 @@ const LanguageManagement = ({ languages, isLoadingLanguages, onAddLanguage, onDe
                         {language.name && <span className="ml-1 text-sm">- {language.name}</span>}
                       </div>
                       
-                      {/* Delete button - shows on hover */}
+                      {/* Action buttons - shows on hover */}
                       {hoveredLanguage === language._id && (
-                        <button
-                          onClick={(e) => handleDeleteClick(language, e)}
-                          className="ml-2 p-1 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150 group"
-                          title={`Delete ${language.name || language.code}`}
-                        >
-                          <svg 
-                            className="w-4 h-4" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
+                        <div className="ml-2 flex items-center space-x-1">
+                          {/* Edit button */}
+                          <button
+                            onClick={(e) => handleEditClick(language, e)}
+                            className="p-1 rounded-full hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150"
+                            title={`Edit ${language.name || language.code}`}
                           >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M6 18L18 6M6 6l12 12" 
-                            />
-                          </svg>
-                        </button>
+                            <svg 
+                              className="w-4 h-4" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+                              />
+                            </svg>
+                          </button>
+                          
+                          {/* Delete button */}
+                          <button
+                            onClick={(e) => handleDeleteClick(language, e)}
+                            className="p-1 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150"
+                            title={`Delete ${language.name || language.code}`}
+                          >
+                            <svg 
+                              className="w-4 h-4" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M6 18L18 6M6 6l12 12" 
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       )}
                       
                       {/* Hover indicator */}

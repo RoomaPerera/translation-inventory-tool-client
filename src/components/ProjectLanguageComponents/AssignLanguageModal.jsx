@@ -24,6 +24,37 @@ const AssignLanguageModal = ({
     
     console.log('Project languages (assigned IDs):', assignedLanguageIds);
     console.log('All languages:', allLanguages);
+    console.log('Selected project:', selectedProject);
+
+    // Get default language ID from the selected project
+    const getDefaultLanguageId = () => {
+        if (!selectedProject?.defaultLanguage) return null;
+        
+        // Handle different formats of defaultLanguage
+        if (typeof selectedProject.defaultLanguage === 'string') {
+            // If it's a string, it might be an ID or code
+            return selectedProject.defaultLanguage;
+        } else if (typeof selectedProject.defaultLanguage === 'object') {
+            // If it's an object, get the ID
+            return selectedProject.defaultLanguage._id || selectedProject.defaultLanguage.id;
+        }
+        
+        return null;
+    };
+
+    const defaultLanguageId = getDefaultLanguageId();
+    
+    // Check if a language is the default language
+    const isDefaultLanguage = (language) => {
+        if (!defaultLanguageId) return false;
+        
+        const languageId = language._id || language.id;
+        const languageCode = language.code;
+        
+        // Check by ID first, then by code as fallback
+        return String(defaultLanguageId) === String(languageId) || 
+               String(defaultLanguageId) === String(languageCode);
+    };
 
     // Handle individual checkbox selection
     const handleLanguageToggle = (languageId) => {
@@ -117,13 +148,16 @@ const AssignLanguageModal = ({
                                             const languageId = language._id || language.id;
                                             const isAssigned = isLanguageAssigned(language);
                                             const isSelected = selectedLanguageIds.includes(languageId);
+                                            const isDefault = isDefaultLanguage(language);
                                             
                                             return (
                                                 <div 
                                                     key={languageId}
                                                     className={`flex items-center py-3 px-2 rounded transition-colors ${
                                                         isAssigned 
-                                                            ? 'bg-gray-100 cursor-not-allowed' 
+                                                            ? isDefault 
+                                                                ? 'bg-blue-50 border border-blue-200 cursor-not-allowed' 
+                                                                : 'bg-gray-100 cursor-not-allowed'
                                                             : 'hover:bg-gray-50 cursor-pointer'
                                                     } ${index < allLanguages.length - 1 ? 'border-b border-gray-100' : ''}`}
                                                     onClick={() => !isAssigned && !isAssigning && handleLanguageToggle(languageId)}
@@ -139,17 +173,39 @@ const AssignLanguageModal = ({
                                                         <div className={`text-sm font-medium ${isAssigned ? 'text-gray-500' : 'text-gray-700'}`}>
                                                             <span className="font-semibold">{language.code || 'N/A'}</span>
                                                             <span className="ml-1">- {language.name || 'Unnamed'}</span>
+                                                            {isDefault && (
+                                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                    Default
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         {isAssigned && (
-                                                            <div className="text-xs text-gray-400 mt-1">
-                                                                Already assigned to this project
+                                                            <div className={`text-xs mt-1 ${isDefault ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                                {isDefault 
+                                                                    ? 'Default language for this project' 
+                                                                    : 'Already assigned to this project'
+                                                                }
                                                             </div>
                                                         )}
                                                     </div>
                                                     {isAssigned && (
-                                                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
-                                                            Assigned
-                                                        </span>
+                                                        <div className="flex flex-col items-end space-y-1">
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                isDefault 
+                                                                    ? 'bg-blue-200 text-blue-700 font-medium' 
+                                                                    : 'bg-gray-200 text-gray-600'
+                                                            }`}>
+                                                                Assigned
+                                                            </span>
+                                                            {/* {isDefault && (
+                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                                                                    Default
+                                                                </span>
+                                                            )} */}
+                                                        </div>
                                                     )}
                                                 </div>
                                             );
@@ -191,6 +247,14 @@ const AssignLanguageModal = ({
                                             <div className="col-span-2">
                                                 <span className="font-medium">Total:</span> {allLanguages.length}
                                             </div>
+                                            {defaultLanguageId && (
+                                                <div className="col-span-2 mt-1 pt-1 border-t border-gray-200">
+                                                    <span className="font-medium text-blue-600">Default Language:</span>{' '}
+                                                    <span className="text-blue-700">
+                                                        {allLanguages.find(lang => isDefaultLanguage(lang))?.name || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -198,7 +262,7 @@ const AssignLanguageModal = ({
                                     {availableLanguages.length === 0 && allLanguages.length > 0 && (
                                         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
                                             <p className="text-sm text-green-700 font-medium">
-                                                ✅ All languages are already assigned to this project!
+                                                All languages are already assigned to this project!
                                             </p>
                                         </div>
                                     )}

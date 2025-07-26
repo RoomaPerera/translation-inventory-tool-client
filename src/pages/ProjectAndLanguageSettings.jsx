@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
+import { useNavigate } from 'react-router-dom';
 import projectService from '../services/projectService';
 import languageService from '../services/languageService';
 
 // Import reusable components
 import TabNavigation from '../components/reusableComponents/TabNavigation';
-import ProjectManagement from '../components/ProjectLanguageComponents/ProjectManagement';
 import LanguageManagement from '../components/ProjectLanguageComponents/LanguageManagement';
 import QuickActions from '../components/ProjectLanguageComponents/QuickActions';
 import Modal from '../components/reusableComponents/Modal';
@@ -15,8 +15,10 @@ import AddProject from '../components/ProjectLanguageComponents/AddProject';
 import EditProjectForm from '../components/ProjectLanguageComponents/EditProjectForm';
 import LanguageForm from '../components/ProjectLanguageComponents/LanguageForm';
 import DeleteProjectModal from '../components/ProjectLanguageComponents/DeleteProjectModal';
+import EditLanguageForm from '../components/ProjectLanguageComponents/EditLanguageModal';
 
 const ProjectAndLanguageSettings = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('projects');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddLanguageForm, setShowAddLanguageForm] = useState(false);
@@ -29,8 +31,9 @@ const ProjectAndLanguageSettings = () => {
   const [languages, setLanguages] = useState([]);
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [showStats, setShowStats] = useState(false);
   const { user } = useAuthContext();
+  const [showEditLanguageForm, setShowEditLanguageForm] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
 
   // Enhanced stats calculations
   const stats = {
@@ -69,7 +72,7 @@ const ProjectAndLanguageSettings = () => {
     }
   };
 
-  // Enhanced notification system
+  // Notification system
   const [notifications, setNotifications] = useState([]);
   
   const showNotification = (message, type = 'info') => {
@@ -87,26 +90,22 @@ const ProjectAndLanguageSettings = () => {
       setIsPageLoading(true);
       await Promise.all([fetchLanguages(), fetchProjects()]);
       setIsPageLoading(false);
-      setTimeout(() => setShowStats(true), 500);
     };
     loadData();
   }, []);
 
   // Enhanced event handlers with notifications
   const handleDeleteProject = (projectOrId) => {
-    console.log('handleDeleteProject called with:', projectOrId); // Debug log
+    console.log('handleDeleteProject called with:', projectOrId);
     
-    // Handle both cases: full project object or just ID
     let project;
     if (typeof projectOrId === 'string') {
-      // If it's just an ID, find the full project
       project = projects.find(p => p._id === projectOrId);
     } else {
-      // If it's already a project object
       project = projectOrId;
     }
     
-    console.log('Final project object:', project); // Debug log
+    console.log('Final project object:', project);
     setProjectToDelete(project);
     setShowDeleteModal(true);
     setShowAddForm(false);
@@ -149,160 +148,161 @@ const ProjectAndLanguageSettings = () => {
     setShowDeleteModal(false);
   };
 
-// Enhanced handleDeleteLanguage function with default language protection
-const handleDeleteLanguage = async (language) => {
-  try {
-    console.log('Deleting language:', language);
-    
-    // Get the language ID (handle both _id and id)
-    const languageId = language._id || language.id;
-    const languageCode = language.code;
-    const languageName = language.name || language.code;
-    
-    if (!languageId) {
-      throw new Error('Language ID is missing');
-    }
-    
-    // Step 1: Check if this language is used as default language in any project
-    const projectsUsingAsDefault = projects.filter(project => {
-      if (!project.defaultLanguage) return false;
+  // Navigate to project details page
+  const handleViewProjectDetails = () => {
+    navigate('/project-details');
+  };
+
+  // Enhanced handleDeleteLanguage function with default language protection
+  const handleDeleteLanguage = async (language) => {
+    try {
+      console.log('Deleting language:', language);
       
-      // Handle both string and object formats for defaultLanguage
-      if (typeof project.defaultLanguage === 'string') {
-        return project.defaultLanguage === languageCode;
-      } else if (typeof project.defaultLanguage === 'object') {
-        return project.defaultLanguage.code === languageCode || 
-               (project.defaultLanguage._id || project.defaultLanguage.id) === languageId;
+      const languageId = language._id || language.id;
+      const languageCode = language.code;
+      const languageName = language.name || language.code;
+      
+      if (!languageId) {
+        throw new Error('Language ID is missing');
       }
-      return false;
-    });
-    
-    // If language is used as default, prevent deletion and show warning
-    if (projectsUsingAsDefault.length > 0) {
-      const projectNames = projectsUsingAsDefault.map(p => p.name).join(', ');
-      const projectWord = projectsUsingAsDefault.length === 1 ? 'project' : 'projects';
       
-      showNotification(
-        `❌ Cannot delete language "${languageName}". It is set as the default language for ${projectsUsingAsDefault.length} ${projectWord}: ${projectNames}. Please change the default language for these projects first.`,
-        'error'
-      );
-      
-      // Throw error to stop the deletion process
-      throw new Error(`Language is used as default language in ${projectsUsingAsDefault.length} project(s)`);
-    }
-    
-    // Step 2: Delete the language from the database
-    console.log(`Calling languageService.deleteLanguage with ID: ${languageId}`);
-    await languageService.deleteLanguage(languageId);
-    console.log('Language deleted from database successfully');
-    
-    // Step 3: Remove the language from local state
-    setLanguages(prev => {
-      const filtered = prev.filter(lang => 
-        (lang._id || lang.id) !== languageId
-      );
-      console.log(`Removed language from state. Before: ${prev.length}, After: ${filtered.length}`);
-      return filtered;
-    });
-    
-    // Step 4: Update all projects that use this language (but not as default)
-    const updatedProjects = [];
-    const projectsToUpdate = projects.filter(project => {
-      if (!project.languages || project.languages.length === 0) return false;
-      
-      return project.languages.some(lang => {
-        if (typeof lang === 'string') {
-          return lang === languageCode;
-        } else if (typeof lang === 'object') {
-          return lang.code === languageCode || (lang._id || lang.id) === languageId;
+      const projectsUsingAsDefault = projects.filter(project => {
+        if (!project.defaultLanguage) return false;
+        
+        if (typeof project.defaultLanguage === 'string') {
+          return project.defaultLanguage === languageCode;
+        } else if (typeof project.defaultLanguage === 'object') {
+          return project.defaultLanguage.code === languageCode || 
+                 (project.defaultLanguage._id || project.defaultLanguage.id) === languageId;
         }
         return false;
       });
-    });
-    
-    console.log(`Found ${projectsToUpdate.length} projects using this language`);
-    
-    for (const project of projectsToUpdate) {
-      try {
-        console.log(`Updating project: ${project.name} (ID: ${project._id})`);
+      
+      if (projectsUsingAsDefault.length > 0) {
+        const projectNames = projectsUsingAsDefault.map(p => p.name).join(', ');
+        const projectWord = projectsUsingAsDefault.length === 1 ? 'project' : 'projects';
         
-        // Remove the language from the project's languages array
-        const updatedLanguages = project.languages.filter(lang => {
+        showNotification(
+          `❌ Cannot delete language "${languageName}". It is set as the default language for ${projectsUsingAsDefault.length} ${projectWord}: ${projectNames}. Please change the default language for these projects first.`,
+          'error'
+        );
+        
+        throw new Error(`Language is used as default language in ${projectsUsingAsDefault.length} project(s)`);
+      }
+      
+      console.log(`Calling languageService.deleteLanguage with ID: ${languageId}`);
+      await languageService.deleteLanguage(languageId);
+      console.log('Language deleted from database successfully');
+      
+      setLanguages(prev => {
+        const filtered = prev.filter(lang => 
+          (lang._id || lang.id) !== languageId
+        );
+        console.log(`Removed language from state. Before: ${prev.length}, After: ${filtered.length}`);
+        return filtered;
+      });
+      
+      const updatedProjects = [];
+      const projectsToUpdate = projects.filter(project => {
+        if (!project.languages || project.languages.length === 0) return false;
+        
+        return project.languages.some(lang => {
           if (typeof lang === 'string') {
-            return lang !== languageCode;
+            return lang === languageCode;
           } else if (typeof lang === 'object') {
-            return lang.code !== languageCode && (lang._id || lang.id) !== languageId;
+            return lang.code === languageCode || (lang._id || lang.id) === languageId;
           }
-          return true;
+          return false;
         });
-        
-        console.log(`Project ${project.name}: Languages before: ${project.languages.length}, after: ${updatedLanguages.length}`);
-        
-        // Update the project in the database
-        const updatedProject = await projectService.updateProject(project._id, {
-          ...project,
-          languages: updatedLanguages
-        });
-        
-        updatedProjects.push(updatedProject);
-        console.log(`Successfully updated project: ${project.name}`);
-        
-      } catch (projectError) {
-        console.error(`Failed to update project ${project.name}:`, projectError);
-        // Extract error message from your service's error structure
-        const errorMessage = projectError.message || 
-          (projectError.response?.data?.message) || 
-          'Unknown error';
-        showNotification(`Warning: Failed to remove language from project "${project.name}": ${errorMessage}`, 'error');
-      }
-    }
-    
-    // Step 5: Update the projects state with the modified projects
-    if (updatedProjects.length > 0) {
-      setProjects(prev => prev.map(project => {
-        const updatedProject = updatedProjects.find(up => up._id === project._id);
-        return updatedProject || project;
-      }));
+      });
       
-      showNotification(
-        `🗑️ Language "${languageName}" deleted and removed from ${updatedProjects.length} project(s)!`, 
-        'success'
-      );
-    } else {
-      showNotification(`🗑️ Language "${languageName}" deleted successfully!`, 'success');
-    }
-    
-  } catch (error) {
-    console.error('Failed to delete language:', error);
-    
-    // Don't show duplicate error messages for default language protection
-    if (!error.message?.includes('used as default language')) {
-      // Extract error message from your service's error structure
-      let errorMessage = 'Unknown error occurred';
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
+      console.log(`Found ${projectsToUpdate.length} projects using this language`);
+      
+      for (const project of projectsToUpdate) {
+        try {
+          console.log(`Updating project: ${project.name} (ID: ${project._id})`);
+          
+          const updatedLanguages = project.languages.filter(lang => {
+            if (typeof lang === 'string') {
+              return lang !== languageCode;
+            } else if (typeof lang === 'object') {
+              return lang.code !== languageCode && (lang._id || lang.id) !== languageId;
+            }
+            return true;
+          });
+          
+          console.log(`Project ${project.name}: Languages before: ${project.languages.length}, after: ${updatedLanguages.length}`);
+          
+          const updatedProject = await projectService.updateProject(project._id, {
+            ...project,
+            languages: updatedLanguages
+          });
+          
+          updatedProjects.push(updatedProject);
+          console.log(`Successfully updated project: ${project.name}`);
+          
+        } catch (projectError) {
+          console.error(`Failed to update project ${project.name}:`, projectError);
+          const errorMessage = projectError.message || 
+            (projectError.response?.data?.message) || 
+            'Unknown error';
+          showNotification(`Warning: Failed to remove language from project "${project.name}": ${errorMessage}`, 'error');
+        }
       }
       
-      showNotification(
-        `Failed to delete language: ${errorMessage}`, 
-        'error'
-      );
+      if (updatedProjects.length > 0) {
+        setProjects(prev => prev.map(project => {
+          const updatedProject = updatedProjects.find(up => up._id === project._id);
+          return updatedProject || project;
+        }));
+        
+        showNotification(
+          `🗑️ Language "${languageName}" deleted and removed from ${updatedProjects.length} project(s)!`, 
+          'success'
+        );
+      } else {
+        showNotification(`🗑️ Language "${languageName}" deleted successfully!`, 'success');
+      }
+      
+    } catch (error) {
+      console.error('Failed to delete language:', error);
+      
+      if (!error.message?.includes('used as default language')) {
+        let errorMessage = 'Unknown error occurred';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        showNotification(
+          `Failed to delete language: ${errorMessage}`, 
+          'error'
+        );
+      }
+      
+      throw error;
     }
-    
-    throw error; // Re-throw to let the LanguageManagement component handle it
-  }
+  };
+
+  const handleEditLanguage = (language) => {
+  setSelectedLanguage(language);
+  setShowEditLanguageForm(true);
+  setShowAddForm(false);
+  setShowAddLanguageForm(false);
+  setShowDeleteModal(false);
 };
 
   const closeModal = () => {
     setShowAddForm(false);
     setShowAddLanguageForm(false);
     setShowEditForm(false);
+    setShowEditLanguageForm(false);
     setShowDeleteModal(false);
     setSelectedProject(null);
+    setSelectedLanguage(null);
     setProjectToDelete(null);
   };
 
@@ -310,6 +310,7 @@ const handleDeleteLanguage = async (language) => {
     if (showAddForm) return 'Add New Project';
     if (showEditForm) return 'Edit Project';
     if (showAddLanguageForm) return 'Add New Language';
+    if (showEditLanguageForm) return 'Edit Language'; 
     if (showDeleteModal) return 'Delete Project';
     return '';
   };
@@ -355,6 +356,21 @@ const handleDeleteLanguage = async (language) => {
       );
     }
 
+ if (showEditLanguageForm && selectedLanguage) {
+    return (
+      <EditLanguageForm 
+        language={selectedLanguage}
+        onSuccess={async () => {
+          closeModal();
+          await fetchLanguages();
+          await fetchProjects(); // Refresh projects in case language was used in projects
+          showNotification('Language updated successfully!', 'success');
+        }}
+        existingLanguages={languages}
+      />
+    );
+  }
+
     if (showDeleteModal && projectToDelete) {
       return (
         <DeleteProjectModal
@@ -371,11 +387,116 @@ const handleDeleteLanguage = async (language) => {
   // Tab change handler with animation
   const handleTabChange = (newTab) => {
     setActiveTab(newTab);
-    // Add subtle vibration feedback if supported
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
   };
+
+  // Simple Project Overview Component
+  const ProjectOverview = () => (
+    <div className="animate-fade-in">
+      <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
+          <h2 className="text-lg sm:text-xl font-semibold text-blue-800">Project Overview</h2>
+        </div>
+        <p className="text-blue-600/80 text-sm">
+          Manage your translation projects and access detailed project information
+        </p>
+      </div>
+      
+      <div className="grid gap-4 sm:gap-6">
+        {/* Add Project Card */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-slate-800 flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+                <span>Create New Project</span>
+              </h3>
+              <p className="text-slate-600">Start a new translation project with custom settings</p>
+            </div>
+            <button
+              onClick={handleAddProject}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:shadow-lg hover:scale-105 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <span className="flex items-center space-x-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Project</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Your Projects Card */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-slate-800 flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"></div>
+                <span>Your Projects</span>
+              </h3>
+              <p className="text-slate-600">
+                View and manage all your projects ({stats.totalProjects} total)
+              </p>
+              {stats.totalProjects > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded-lg text-xs font-medium">
+                    {stats.projectsWithLanguages} Active
+                  </span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
+                    {stats.averageLanguagesPerProject} Avg Languages
+                  </span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleViewProjectDetails}
+              disabled={isLoadingProjects}
+              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:shadow-lg hover:scale-105 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="flex items-center space-x-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>{isLoadingProjects ? 'Loading...' : 'View Projects'}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        {stats.totalProjects > 0 && (
+          <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center space-x-2">
+              <div className="w-3 h-3 bg-gradient-to-r from-slate-500 to-blue-500 rounded-full"></div>
+              <span>Project Statistics</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{stats.totalProjects}</div>
+                <div className="text-sm text-slate-600">Total Projects</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-teal-600">{stats.projectsWithLanguages}</div>
+                <div className="text-sm text-slate-600">With Languages</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-600">{stats.totalLanguages}</div>
+                <div className="text-sm text-slate-600">Available Languages</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-600">{stats.averageLanguagesPerProject}</div>
+                <div className="text-sm text-slate-600">Avg per Project</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   if (isPageLoading) {
     return (
@@ -386,8 +507,7 @@ const handleDeleteLanguage = async (language) => {
             <div className="absolute inset-0 w-20 h-20 border-4 border-transparent rounded-full animate-ping border-t-indigo-400"></div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-slate-800 animate-pulse">Loading Dashboard</h2>
-            <p className="text-slate-600">Preparing your workspace...</p>
+            <h2 className="text-2xl font-bold text-slate-800 animate-pulse">Loading</h2>
           </div>
           <div className="flex space-x-1 justify-center">
             {[0, 1, 2].map((i) => (
@@ -403,58 +523,12 @@ const handleDeleteLanguage = async (language) => {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Enhanced Responsive Header Section */}
+      {/* Simplified Responsive Header Section */}
       <div className="bg-white/90 backdrop-blur-lg border-b border-slate-200/60 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6">
-            {/* Title Section - Mobile First */}
-            <div className="space-y-1 mb-4 lg:mb-0">
-              {/* <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-blue-700 animate-gradient">
-                <span className="hidden sm:inline">🚀 </span>Project & Language Settings
-              </h1> */}
-              <p className="text-slate-600/80 text-xs sm:text-sm">
-                Manage your projects and languages with ease
-              </p>
-            </div>
-            
-            {/* Quick Stats Dashboard - Responsive */}
-            <div className={`transition-all duration-700 transform ${
-              showStats ? 'translate-x-0 opacity-100' : 'translate-x-4 lg:translate-x-8 opacity-0'
-            }`}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="text-center">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-800">{stats.totalProjects}</div>
-                    <div className="text-xs text-blue-600">Projects</div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-indigo-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="text-center">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-800">{stats.totalLanguages}</div>
-                    <div className="text-xs text-indigo-600">Languages</div>
-                  </div>
-                </div>
-                {/* Additional stats for larger screens */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-teal-200 hover:shadow-lg transition-all duration-300 hover:scale-105 sm:block lg:hidden">
-                  <div className="text-center">
-                    <div className="text-lg sm:text-xl font-bold text-teal-800">{stats.projectsWithLanguages}</div>
-                    <div className="text-xs text-teal-600">Active</div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-300 hover:shadow-lg transition-all duration-300 hover:scale-105 sm:block lg:hidden">
-                  <div className="text-center">
-                    <div className="text-lg sm:text-xl font-bold text-slate-800">{stats.averageLanguagesPerProject}</div>
-                    <div className="text-xs text-slate-600">Avg/Project</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Enhanced Tab Navigation - Mobile Optimized */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Enhanced Tab Navigation */}
           <div className="relative overflow-x-auto">
             <TabNavigation 
               activeTab={activeTab} 
@@ -468,29 +542,7 @@ const handleDeleteLanguage = async (language) => {
       {/* Enhanced Responsive Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="transition-all duration-500 ease-in-out">
-          {activeTab === 'projects' && (
-            <div className="animate-fade-in">
-              <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-blue-800">Project Management</h2>
-                </div>
-                <p className="text-blue-600/80 text-sm">
-                  Create, edit, and manage your translation projects
-                </p>
-              </div>
-              
-              <div className="space-y-4 sm:space-y-6">
-                <ProjectManagement
-                  projects={projects}
-                  isLoadingProjects={isLoadingProjects}
-                  onAddProject={handleAddProject}
-                  onEditProject={handleEditProject}
-                  onDeleteProject={handleDeleteProject}
-                />
-              </div>
-            </div>
-          )}
+          {activeTab === 'projects' && <ProjectOverview />}
           
           {activeTab === 'languages' && (
             <div className="animate-fade-in">
@@ -509,6 +561,7 @@ const handleDeleteLanguage = async (language) => {
                   languages={languages}
                   isLoadingLanguages={isLoadingLanguages}
                   onAddLanguage={handleAddLanguage}
+                  onEditLanguage={handleEditLanguage}  
                   onDeleteLanguage={handleDeleteLanguage}
                 />
               </div>
@@ -539,7 +592,7 @@ const handleDeleteLanguage = async (language) => {
       
       {/* Enhanced Responsive Modal with backdrop blur */}
       <Modal
-        isOpen={showAddForm || showAddLanguageForm || showEditForm || showDeleteModal}
+        isOpen={showAddForm || showAddLanguageForm || showEditForm || showEditLanguageForm || showDeleteModal}
         onClose={closeModal}
         title={getModalTitle()}
         className="backdrop-blur-xl bg-white/96 mx-4 sm:mx-0 border border-slate-200/50"

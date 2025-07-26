@@ -14,6 +14,7 @@ import LanguageForm from './components/ProjectLanguageComponents/LanguageForm';
 import Settings from './pages/Settings';
 import ProjectAndLanguageSettings from './pages/ProjectAndLanguageSettings';
 import EditProjectForm from './components/ProjectLanguageComponents/EditProjectForm';
+import ProjectDetails from './pages/ProjectDetails';
 
 function App() {
     const { authReady } = useAuthContext();
@@ -41,6 +42,7 @@ function App() {
                     {/* {/* <Route path="/languages/add" element={<LanguageForm />} /> /} */}
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
+                    <Route path="/project-details" element={<ProjectDetails />} />
                     {/* {/ <Route path="/settings/projects/edit/:id" element={<EditProjectForm />} /> */} 
 
                     <Route path="" element={<Navigate to="/" replace />} />
