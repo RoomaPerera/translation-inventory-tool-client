@@ -63,8 +63,6 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
       languages: prev.languages.includes(langCode)
         ? prev.languages.filter((c) => c !== langCode)
         : [...prev.languages, langCode],
-      // Clear default language if we're removing it
-      defaultLanguage: !isAdding && prev.defaultLanguage === langCode ? '' : prev.defaultLanguage
     }));
 
     // Show feedback for toggle action
@@ -165,12 +163,7 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
       <div>
         <label className="block mb-1 font-medium text-gray-700">
           Languages {formData.languages.length > 0 && (
-            <span className="text-indigo-600 text-xs">
-              ({formData.languages.length} selected
-              {formData.defaultLanguage && (
-                <span className="text-green-600"> • Default: {formData.defaultLanguage}</span>
-              )})
-            </span>
+            <span className="text-indigo-600 text-xs">({formData.languages.length} selected)</span>
           )}
         </label>
         <button
@@ -208,44 +201,27 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
           <div>
             <label className="block mb-2 font-medium text-sm">Available Languages</label>
             <div className="flex flex-wrap gap-1 mb-3">
-              {availableLanguages.map((lang) => {
-                const isSelected = formData.languages.includes(lang.code);
-                const isDefault = formData.defaultLanguage === lang.code;
-                
-                return (
-                  <button
-                    type="button"
-                    key={lang._id}
-                    onClick={() => toggleLanguage(lang.code)}
-                    title={`${lang.name} (${lang.code})${isDefault ? ' - Default Language' : ''}`}
-                    className={`px-2 py-1 rounded text-xs border transition-all duration-200 relative ${
-                      isSelected
-                        ? isDefault
-                          ? 'bg-green-200 border-green-400 text-green-800 shadow-sm ring-2 ring-green-300'
-                          : 'bg-indigo-200 border-indigo-400 text-indigo-800 shadow-sm'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300'
-                    } ${
-                      recentlyAdded.includes(lang.code) ? 'ring-2 ring-green-300 ring-opacity-50' : ''
-                    }`}
-                  >
-                    {lang.code}
-                    {isSelected && (
-                      <span className={`ml-1 ${isDefault ? 'text-green-600' : 'text-indigo-600'}`}>
-                        {isDefault ? '★' : '✓'}
-                      </span>
-                    )}
-                    {isDefault && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
-                    )}
-                  </button>
-                );
-              })}
+              {availableLanguages.map((lang) => (
+                <button
+                  type="button"
+                  key={lang._id}
+                  onClick={() => toggleLanguage(lang.code)}
+                  title={`${lang.name} (${lang.code})`}
+                  className={`px-2 py-1 rounded text-xs border transition-all duration-200 ${
+                    formData.languages.includes(lang.code)
+                      ? 'bg-indigo-200 border-indigo-400 text-indigo-800 shadow-sm'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300'
+                  } ${
+                    recentlyAdded.includes(lang.code) ? 'ring-2 ring-green-300 ring-opacity-50' : ''
+                  }`}
+                >
+                  {lang.code}
+                  {formData.languages.includes(lang.code) && (
+                    <span className="ml-1 text-indigo-600">✓</span>
+                  )}
+                </button>
+              ))}
             </div>
-            {formData.defaultLanguage && (
-              <p className="text-xs text-green-600 mt-1">
-                ★ {availableLanguages.find(lang => lang.code === formData.defaultLanguage)?.name || formData.defaultLanguage} ({formData.defaultLanguage}) is set as default
-              </p>
-            )}
           </div>
 
           {/* Selected Language Tags */}
