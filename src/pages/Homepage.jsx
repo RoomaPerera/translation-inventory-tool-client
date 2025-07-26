@@ -10,9 +10,9 @@ import translationService from '../services/translationService';
 import NavBar from '../components/reusableComponents/NavBar';
 
 const ALL_TABS = [
-  { name: 'User List', roles: ['Administrator'] },
-  { name: 'New Project', roles: ['Administrator'] },
-  { name: 'User Profile', roles: ['Administrator', 'Developer', 'Translator'] },
+  { name: 'User List', roles: ['Admin'] },
+  { name: 'New Project', roles: ['Admin'] },
+  { name: 'User Profile', roles: ['Admin', 'Developer', 'Translator'] },
 ];
 
 const Home = () => {
@@ -93,10 +93,11 @@ const Home = () => {
   };
   
   const isAnyModalOpen = isAddModalOpen || isEditModalOpen || isLangModalOpen;
-
+  
+//
   return (
     <>
-   <div className='flex'>
+  <div className='flex min-h-screen bg-gray-50'>
     <div> 
       <aside className="w-64">
         <NavBar
@@ -111,13 +112,13 @@ const Home = () => {
       </aside>
       </div>
       <div>
-           <div className={`flex flex-col h-full p-5 transition-filter duration-300 ${isAnyModalOpen ? 'blur-sm' : ''}`}>
+          <div className={`flex flex-col h-full p-5 transition-filter duration-300 ${isAnyModalOpen ? 'blur-sm' : ''}`}>
         <HomeHeader onAssignLanguageClick={handleOpenLangModal} />
         <HomeToolbar onAddNewTranslation={handleAddNew} />
 
         <div className="flex-grow overflow-y-auto bg-white rounded-lg shadow-sm">
           {loading ? (
-             <div className="p-8 text-center">Loading Translations...</div>
+            <div className="p-8 text-center">Loading Translations...</div>
           ) : error ? (
             <div className="p-8 text-center text-red-500 bg-red-100 rounded-lg">{error}</div>
           ) : (
@@ -127,14 +128,14 @@ const Home = () => {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
-               {paginationData.totalItems > 0 && (
-                 <Pagination
+              {paginationData.totalItems > 0 && (
+                <Pagination
                     currentPage={paginationData.currentPage}
                     totalItems={paginationData.totalItems}
                     itemsPerPage={10} // Or from a state variable
                     onPageChange={handlePageChange}
                   />
-               )}
+              )}
             </>
           )}
         </div>

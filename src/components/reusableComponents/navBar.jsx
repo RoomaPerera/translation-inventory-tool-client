@@ -2,11 +2,11 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const navLinks = [
-  { name: 'Home', to: '/', roles: ['Administrator', 'Developer', 'Translator'] },
-  { name: 'All Entries', to: '/entries', roles: ['Administrator', 'Developer'] },
-  { name: 'Activity Log', to: '/activity', roles: ['Administrator', 'Translator'] },
-  { name: 'Settings', to: '/settings', roles: ['Administrator', 'Developer', 'Translator'] },
-  { name: 'Readability Validator', to: '/tools/readability-validator', roles: ['Administrator', 'Developer'] },
+  { name: 'Home', to: '/', roles: ['Admin', 'Developer', 'Translator'] },
+  { name: 'All Entries', to: '/entries', roles: ['Admin', 'Developer'] },
+  { name: 'Activity Log', to: '/activity', roles: ['Admin', 'Translator'] },
+  { name: 'Settings', to: '/settings', roles: ['Admin', 'Developer', 'Translator'] },
+  { name: 'Readability Validator', to: '/tools/readability-validator', roles: ['Admin', 'Developer'] },
 
 ];
 

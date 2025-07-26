@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 
 // Define all possible tabs and the roles that can see them
 const ALL_TABS = [
-  { name: 'User List', roles: ['Administrator'] },
-  { name: 'New Project', roles: ['Administrator'] },
-  { name: 'User Profile', roles: ['Administrator', 'Developer', 'Translator'] },
+  { name: 'User List', roles: ['Admin'] },
+  { name: 'New Project', roles: ['Admin'] },
+  { name: 'User Profile', roles: ['Admin', 'Developer', 'Translator'] },
 ];
 
 // Props:

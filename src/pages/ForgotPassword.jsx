@@ -13,8 +13,11 @@ const ForgotPassword = () => {
   const [timer, setTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [resetToken, setResetToken] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const navigate = useNavigate();
+  
 
   useEffect(() => {
     let countdown;
@@ -33,12 +36,21 @@ const ForgotPassword = () => {
     return () => clearInterval(countdown);
   }, [step, isResendDisabled]);
 
+  const clearMessages = () => {
+    setMessage('');
+    setError('');
+  };
+
   const handleEmailSubmit = async e => {
     e.preventDefault();
-    if (!email.trim()) return alert('Please enter your email');
+    clearMessages();
+    if (!email.trim()) {
+      setError('Please enter your email.');
+      return;
+    }
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch('http://localhost:5000/api/auth/forgotPassword', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
@@ -47,59 +59,102 @@ const ForgotPassword = () => {
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
       if (!data.resetToken) throw new Error('Server did not send resetToken');
 
-      console.log('✅ resetToken:', data.resetToken);
       setResetToken(data.resetToken);
       setStep('otp');
       setTimer(60);
       setIsResendDisabled(true);
-      alert('OTP sent to your email');
+      setMessage('OTP sent to your email.');
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOtpContinue = e => {
+  const handleOtpContinue = async e => {
     e.preventDefault();
+    clearMessages();
+
     if (!/^[0-9]{6}$/.test(otp.trim())) {
-      return alert('Enter a valid 6-digit OTP');
+      setError('Enter a valid 6-digit OTP.');
+      return;
     }
-    setStep('reset');
+
+    if (!resetToken) {
+      setError('Token missing, please restart the process.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/verifyOtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          otp: otp.trim(),
+          
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Invalid or expired OTP.');
+
+      setMessage('OTP verified successfully.');
+      setStep('reset');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetSubmit = async e => {
     e.preventDefault();
-    if (!newPassword || !confirmPassword) return alert('Fill all password fields');
-    if (newPassword !== confirmPassword) return alert('Passwords do not match');
-    if (!resetToken) return alert('Token missing, please restart the process.');
+    clearMessages();
+    if (!newPassword || !confirmPassword) {
+      setError('Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!resetToken) {
+      setError('Token missing, please restart the process.');
+      return;
+    }
 
     setIsLoading(true);
+
+    
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/reset-password/${resetToken}`, {
+      const res = await fetch('http://localhost:5000/api/auth/resetPasswordWithToken', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           otp: otp.trim(),
           newPassword,
           confirmPassword,
+          token:resetToken,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reset password');
-      alert('Password reset successful! Redirecting to login...');
-      navigate('/login');
+      setMessage('Password reset successful! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendOtp = async () => {
+    clearMessages();
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch('http://localhost:5000/api/auth/forgotPassword', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
@@ -108,13 +163,12 @@ const ForgotPassword = () => {
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
       if (!data.resetToken) throw new Error('Server did not send resetToken');
 
-      console.log('✅ Resent resetToken:', data.resetToken);
       setResetToken(data.resetToken);
       setTimer(60);
       setIsResendDisabled(true);
-      alert('OTP resent to your email');
+      setMessage('OTP resent to your email.');
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +181,9 @@ const ForgotPassword = () => {
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <h1 className="text-center text-3xl font-bold text-purple-700">GTN Portal</h1>
           <h2 className="mt-6 text-center text-2xl font-semibold text-gray-900">Forgot Your Password?</h2>
+
+          {message && <p className="mt-4 text-green-600 text-center font-medium">{message}</p>}
+          {error && <p className="mt-4 text-red-600 text-center font-medium">{error}</p>}
 
           {/* Step 1: Email Form */}
           {step === 'email' && (
@@ -184,7 +241,7 @@ const ForgotPassword = () => {
                   disabled={isLoading}
                   className={`bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  Continue
+                  {isLoading ? 'Verifying...' : 'Continue'}
                 </button>
               </div>
             </form>

@@ -7,6 +7,7 @@ import React from 'react';
  * @param {Function} onSuggestionClick - Function to call when a suggestion is clicked.
  * @param {boolean} isLoading - Whether the panel is currently fetching data.
  */
+
 const TranslationHelper = ({ suggestions, glossary, onSuggestionClick, isLoading }) => {
   return (
     <div className="border border-gray-200 bg-white rounded-lg shadow-sm p-4 h-full">
@@ -39,6 +40,7 @@ const TranslationHelper = ({ suggestions, glossary, onSuggestionClick, isLoading
               <p className="text-sm text-gray-400">No similar translations found.</p>
             )}
           </div>
+          
 
           {/* Glossary Section */}
           <div>

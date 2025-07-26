@@ -5,9 +5,9 @@ import UserProfile from '../components/UserProfile';
 import GTNPortal from '../components/reusableComponents/GTNPortal';
 
 const ALL_TABS = [
-  { name: 'User List', roles: ['Administrator'] },
-  { name: 'New Project', roles: ['Administrator'] },
-  { name: 'User Profile', roles: ['Administrator', 'Developer', 'Translator'] },
+  { name: 'User List', roles: ['Admin'] },
+  { name: 'New Project', roles: ['Admin'] },
+  { name: 'User Profile', roles: ['Admin', 'Developer', 'Translator'] },
 ];
 
 const Settings = () => {

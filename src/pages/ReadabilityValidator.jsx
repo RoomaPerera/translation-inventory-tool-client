@@ -7,8 +7,6 @@ import Button from '../components/reusableComponents/Button';
 import ResultCard from '../components/ResultCard';
 import FileUpload from '../components/FileUpload';
 
-
-
 const ReadabilityValidator = () => {
   const [user, setUser] = useState(null);
   const [textInput, setTextInput] = useState('');
@@ -19,20 +17,19 @@ const ReadabilityValidator = () => {
   const [error, setError] = useState('');
   const [savedResults, setSavedResults] = useState([]);
 
-  // Load user
+  // Load user and saved results for that user
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
 
-      // Load saved results for this user only
       const stored = localStorage.getItem(`savedResults_${parsedUser.email}`);
       setSavedResults(stored ? JSON.parse(stored) : []);
     }
   }, []);
 
-  // Save results for this user only
+  // Save results on change
   useEffect(() => {
     if (user) {
       localStorage.setItem(`savedResults_${user.email}`, JSON.stringify(savedResults));
@@ -73,18 +70,42 @@ const ReadabilityValidator = () => {
     }
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('You are not logged in. Please log in first.');
+        return;
+      }
+
       const postPayload = { text: textToAnalyze };
       if (inputNameType === 'JSON Text') postPayload.fileType = 'json';
       if (inputNameType === 'CSV Text') postPayload.fileType = 'csv';
 
-      const response = await API.post('api/tools/validate', postPayload);
+      const response = await API.post(
+        'http://localhost:5000/api/tools/validate',
+        postPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Set inputName for saving with .text suffix for text input
+      let inputNameForSave = 'plain.text';
+      if (inputNameType === 'JSON Text') inputNameForSave = 'json.text';
+      else if (inputNameType === 'CSV Text') inputNameForSave = 'csv.text';
+
       setResult(response.data);
-      setSavedResults(prev => [
+      setSavedResults((prev) => [
         ...prev,
-        { id: Date.now(), type: 'Text', inputName: inputNameType, result: response.data }
+        { id: Date.now(), type: 'Text', inputName: inputNameForSave, result: response.data },
       ]);
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong during readability analysis.');
+      if (err.response?.status === 401) {
+        setError('Session expired or unauthorized. Please log in again.');
+      } else {
+        setError(err.response?.data?.error || 'Something went wrong during readability analysis.');
+      }
     }
   };
 
@@ -101,23 +122,41 @@ const ReadabilityValidator = () => {
       return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('You are not logged in. Please log in first.');
+      return;
+    }
+
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const fileContent = e.target.result;
-        const response = await API.post('api/tools/validate', {
-          fileContent,
-          fileType,
-          fileName: file.name,
-        });
+        const response = await API.post(
+          'http://localhost:5000/api/tools/validate',
+          {
+            fileContent,
+            fileType,
+            fileName: file.name,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         setResult(response.data);
-        setSavedResults(prev => [
+        setSavedResults((prev) => [
           ...prev,
-          { id: Date.now(), type: 'File', inputName: file.name, result: response.data }
+          { id: Date.now(), type: 'File', inputName: file.name, result: response.data },
         ]);
       } catch (err) {
-        setError(err.response?.data?.error || 'Something went wrong during file validation.');
+        if (err.response?.status === 401) {
+          setError('Session expired or unauthorized. Please log in again.');
+        } else {
+          setError(err.response?.data?.error || 'Something went wrong during file validation.');
+        }
       }
     };
     reader.readAsText(file);
@@ -157,7 +196,6 @@ const ReadabilityValidator = () => {
         <p className="mb-6 font-semibold text-gray-700">
           Current Role: <span className="text-indigo-600">{user.role}</span>
         </p>
-        
 
         <h2 className="text-2xl font-bold mb-4">📊 Readability & Format Validator</h2>
 
@@ -217,14 +255,14 @@ const ReadabilityValidator = () => {
                     const visualScore = item.result.readabilityScores
                       ? computeVisualScore(item.result.readabilityScores)
                       : item.result.fileValidation?.readabilityScores
-                        ? computeVisualScore(item.result.fileValidation.readabilityScores)
-                        : 'N/A';
+                      ? computeVisualScore(item.result.fileValidation.readabilityScores)
+                      : 'N/A';
 
                     const complexityLabel = item.result.readabilityScores
                       ? getComplexityLabel(item.result.readabilityScores)
                       : item.result.fileValidation?.readabilityScores
-                        ? getComplexityLabel(item.result.fileValidation.readabilityScores)
-                        : 'N/A';
+                      ? getComplexityLabel(item.result.fileValidation.readabilityScores)
+                      : 'N/A';
 
                     const fileValidation = item.result.fileValidation
                       ? JSON.stringify(item.result.fileValidation, null, 2)
