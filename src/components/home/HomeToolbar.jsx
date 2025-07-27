@@ -1,8 +1,9 @@
-import React from 'react';
+//import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
 
-const HomeToolbar = ({ filters, onFilterChange, onAddNewTranslation, onAddNewTranslation, projectLanguages = [], onDownload, onRefresh, onLanguageFilter  }) => {
+const HomeToolbar = ({ filters, onFilterChange, onAddNewTranslation, projectLanguages = [], onDownload, onRefresh, onLanguageFilter  }) => {
    const [selectedLanguage, setSelectedLanguage] = useState('all');
     
     // Reset language selection when project languages change

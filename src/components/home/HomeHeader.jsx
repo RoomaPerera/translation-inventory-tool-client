@@ -14,7 +14,6 @@ const HomeHeader = ({
     onProjectChange,
     selectedProject,
     onProjectSelect,
-    onAssignLanguageClick,
     loading = false,
 }) => {
     const projectOptions = projects.length > 0 

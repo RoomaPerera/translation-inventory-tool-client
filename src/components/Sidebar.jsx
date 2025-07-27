@@ -1,4 +1,5 @@
 import React from "react";
+import { FaChartLine } from 'react-icons/fa';
 import { Link, useNavigate } from "react-router-dom";
 import { FaHome, FaList, FaClock, FaCog, FaSignOutAlt } from "react-icons/fa";
 import gtnLogo from "../assets/images/gtn-logo.png";

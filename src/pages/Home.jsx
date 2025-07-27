@@ -58,8 +58,7 @@ const Home = () => {
     fetchInitialData();
   }, []);
 
-  // Monitor projectLanguages changes for debugging
-import { useEffect, useCallback, useRef } from 'react';
+
 
 // Use ref to track if projects have been fetched
 const projectsFetched = useRef(false);
