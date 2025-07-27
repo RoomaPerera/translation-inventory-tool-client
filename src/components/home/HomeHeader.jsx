@@ -3,24 +3,22 @@ import { SearchInput } from '../reusableComponents/SearchInput';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
 
-// Component now receives project-related props
 const HomeHeader = ({
+    user, // <-- 1. Receive the user object as a prop
     searchTerm,
     onSearchChange,
     onAssignLanguageClick,
+    onAnomalyDashboardClick,
     projects,
     currentProjectId,
     onProjectChange
 }) => {
-    // Dynamically create options from the projects prop
     const projectOptions = projects.map(p => ({ value: p._id, label: p.name }));
 
     return (
         <div className="flex justify-between items-center bg-white p-4 px-5 rounded-lg shadow-sm mb-5">
             <div className="flex items-center gap-5">
                 <h2 className="text-xl font-semibold">Translation Dashboard</h2>
-
-                {/* --- FIXED: Project Selector Dropdown --- */}
                 <div className="w-68">
                     <Select
                         /*label="Project"*/
@@ -29,7 +27,6 @@ const HomeHeader = ({
                         onSelect={onProjectChange}
                     />
                 </div>
-                
                 <div className="w-64">
                     <SearchInput
                         placeholder="Search by Key..."
@@ -38,7 +35,16 @@ const HomeHeader = ({
                     />
                 </div>
             </div>
-            <div className="header-right">
+            <div className="flex items-center">
+                {/* --- 2. Conditionally render the button --- */}
+                {user && user.role === 'Admin' && (
+                    <Button
+                        onClick={onAnomalyDashboardClick}
+                        className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2.5 !px-4 mr-4"
+                    >
+                        Milinda Dashboard
+                    </Button>
+                )}
                 <Button
                     onClick={onAssignLanguageClick}
                     className="bg-brand-purple-base hover:bg-opacity-80 text-white !py-2.5 !px-4"
