@@ -3,7 +3,7 @@ import { DestructiveButton } from './reusableComponents/DestructiveButton'; // I
 import Button from './reusableComponents/Button';
 import ConfirmModal from './UserListComponents/ConfirmModal';
 
-const TranslationTable = ({ translations = [], onEdit, onDelete }) => {
+const TranslationTable = ({ user, translations = [], onEdit, onDelete }) => {
     const [confirmModal, setConfirmModal] = useState({
         open: false,
         translationId: null,
@@ -63,13 +63,16 @@ const TranslationTable = ({ translations = [], onEdit, onDelete }) => {
                                     >
                                         Edit
                                     </Button>
-                                    <DestructiveButton
-                                        onClick={() => handleDeleteClick(t)}
-                                        variant="outline"
-                                        className="!py-1 !px-3"
-                                    >
-                                        Delete
-                                    </DestructiveButton>
+                                    {/* Only show Delete button for Admin and Developer */}
+                                    {user && (user.role === 'Admin' || user.role === 'Developer') && (
+                                        <DestructiveButton
+                                            onClick={() => handleDeleteClick(t)}
+                                            variant="outline"
+                                            className="!py-1 !px-3"
+                                        >
+                                            Delete
+                                        </DestructiveButton>
+                                    )}
                                 </td>
                             </tr>
                         ))

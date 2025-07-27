@@ -21,7 +21,7 @@ const Home = () => {
     const [paginationData, setPaginationData] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({ key: '', language: '', projectId: '' });
+    const [filters, setFilters] = useState({ key: '', language: '', projectId: '', status: 'all' });
     const [currentPage, setCurrentPage] = useState(1);
     const debouncedSearchTerm = useDebounce(filters.key, 500);
 
@@ -61,6 +61,7 @@ const Home = () => {
                 key: debouncedSearchTerm,
                 language: filters.language,
                 projectId: filters.projectId,
+                status: filters.status !== 'all' ? filters.status : undefined,
             });
             setTranslations(response.data.translations);
             setPaginationData({
@@ -74,7 +75,7 @@ const Home = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, debouncedSearchTerm, filters.language, filters.projectId]);
+    }, [currentPage, debouncedSearchTerm, filters.language, filters.projectId, filters.status]);
 
     useEffect(() => {
         fetchTranslations();
@@ -129,6 +130,7 @@ const Home = () => {
                     onAnomalyDashboardClick={handleNavigateToAnomalyDashboard}
                 />
                 <HomeToolbar
+                    user={user}
                     filters={filters}
                     onFilterChange={handleFilterChange}
                     onAddNewTranslation={handleAddNew}
@@ -141,7 +143,7 @@ const Home = () => {
                     ) : (
                         <>
                             {/* --- 5. Pass the correct handler to the table --- */}
-                            <TranslationTable translations={translations} onEdit={handleEdit} onDelete={(id) => handleDeleteRequest(translations.find(t => t._id === id))} />
+                            <TranslationTable user={user} translations={translations} onEdit={handleEdit} onDelete={(id) => handleDeleteRequest(translations.find(t => t._id === id))} />
                             {paginationData.totalItems > 0 ? (
                                 <Pagination currentPage={paginationData.currentPage} totalItems={paginationData.totalItems} itemsPerPage={10} onPageChange={handlePageChange} />
                             ) : (
