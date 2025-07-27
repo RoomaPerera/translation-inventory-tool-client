@@ -5,7 +5,7 @@ import axiosInstance from './axiosInstance';
  * Updates the list of assigned languages for a specific user.
  */
 const assignLanguagesToUser = (userId, languages) => {
-    return axiosInstance.put(`/users/modify-languages/${userId}`, { languages });
+    return axiosInstance.patch(`/users/${userId}/languages`, { languages });
 };
 
 /**
@@ -16,17 +16,12 @@ const getPendingUsers = () => {
 };
 
 /**
- * Approves a pending user registration.
+ * Approves or rejects a pending user registration.
+ * REQ-6
  */
-const approveUser = (userId) => {
-    return axiosInstance.put('/users/approve', { id: userId, approve: true });
-};
-
-/**
- * Rejects a pending user registration.
- */
-const rejectUser = (userId) => {
-    return axiosInstance.put('/users/approve', { id: userId, approve: false });
+const updateUserApproval = (userId, isApproved) => {
+    // FIXED: Route to match backend userRoutes.js
+    return axiosInstance.patch(`/users/${userId}/approve`, { approve: isApproved });
 };
 
 /**
@@ -36,12 +31,19 @@ const deleteUser = (userId) => {
     return axiosInstance.delete(`/users/delete/${userId}`);
 };
 
+/**
+ * Fetches a list of all non-deleted users.
+ */
+const getAllUsers = () => {
+    return axiosInstance.get('/users');
+};
+
 const userService = {
     assignLanguagesToUser,
     getPendingUsers,
-    approveUser,
-    rejectUser,
+    updateUserApproval,
     deleteUser,
+    getAllUsers,
 };
 
 export default userService;

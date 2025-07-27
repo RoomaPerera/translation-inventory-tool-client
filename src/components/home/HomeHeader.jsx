@@ -1,15 +1,24 @@
 import React from 'react';
 import { SearchInput } from '../reusableComponents/SearchInput';
 import Button from '../reusableComponents/Button';
-import { Select } from '../reusableComponents/Select'; // Import the reusable Select
+import { Select } from '../reusableComponents/Select';
 
-const HomeHeader = ({ projects = [], selectedProject, onProjectSelect, onAssignLanguageClick, loading = false }) => {
-    // Transform projects into the format expected by the Select component
+const HomeHeader = ({
+    user, // <-- 1. Receive the user object as a prop
+    searchTerm,
+    onSearchChange,
+    onAssignLanguageClick,
+    onAnomalyDashboardClick,
+    projects = [],
+    currentProjectId,
+    onProjectChange,
+    selectedProject,
+    onProjectSelect,
+    onAssignLanguageClick,
+    loading = false,
+}) => {
     const projectOptions = projects.length > 0 
-        ? projects.map(project => ({
-            value: project._id,
-            label: project.name
-          }))
+        ? projects.map(p => ({ value: p._id, label: p.name }))
         : loading 
         ? [{ value: 'loading', label: 'Loading projects...' }]
         : [{ value: 'no-projects', label: 'No projects available' }];
@@ -26,30 +35,45 @@ const HomeHeader = ({ projects = [], selectedProject, onProjectSelect, onAssignL
 
     return (
         <div className="flex justify-between items-center bg-white p-4 px-5 rounded-lg shadow-sm mb-5">
-            <div className="flex items-center gap-5"> {/* Added gap for spacing */}
+            <div className="flex items-center gap-5">
                 <h2 className="text-xl font-semibold">Translation Dashboard</h2>
-
-                {/* Project Selection Dropdown */}
-                <div className="w-48 min-w-[12rem]">
-                    <Select 
-                        options={projectOptions} 
-                        selected={selectedProject?._id || projectOptions[0]?.value} 
-                        onSelect={handleProjectSelect}
+                <div className="w-68 min-w-[12rem]">
+                    <Select
+                        /*label="Project"*/
+                        options={projectOptions}
+                        selected={currentProjectId}
+                        onSelect={onProjectChange}
+                        // selected={selectedProject?._id || projectOptions[0]?.value} 
+                        // onSelect={handleProjectSelect}
                         disabled={projects.length === 0 || loading}
                     />
                 </div>
-
                 <div className="w-64">
-                    <SearchInput placeholder="Search Keys or Words..." />
+                    <SearchInput
+                        placeholder="Search by Key..."
+                        value={searchTerm}
+                        onChange={onSearchChange}
+                    />
                 </div>
             </div>
-            <div className="header-right">
+            <div className="flex items-center">
+                {/* --- 2. Conditionally render the button --- */}
+                {user && user.role === 'Admin' && (
+                    <Button
+                        onClick={onAnomalyDashboardClick}
+                        className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2.5 !px-4 mr-4"
+                    >
+                        Milinda Dashboard
+                    </Button>
+                )}
+                <div className="header-right">
                 <Button
                     onClick={onAssignLanguageClick}
-                    className="bg-brand-purple-base hover:bg-purple-700 text-white !py-2.5 !px-4"
+                    className="bg-brand-purple-base hover:bg-opacity-80 text-white !py-2.5 !px-4"
                 >
                     + Assign New Language
                 </Button>
+                </div>
             </div>
         </div>
     );

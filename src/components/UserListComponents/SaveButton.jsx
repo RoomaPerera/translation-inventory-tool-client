@@ -1,5 +1,5 @@
 import React from 'react';
-import Button from '../../reusableComponents/Button';
+import Button from '../reusableComponents/Button';
 
 export default function SaveButton({ children = 'Save', ...props }) {
     return (
