@@ -26,47 +26,75 @@ const Sidebar = () => {
     }
   };
 
+  // Role-based navigation visibility
+  const shouldShowNavItem = (itemName) => {
+    if (!user || !user.role) return false;
+    
+    const role = user.role.toLowerCase();
+    
+    switch (itemName) {
+      case 'home':
+        return true; // Home is visible to all roles
+      case 'all-entries':
+        return role === 'admin' || role === 'developer'; // Hidden for translators
+      case 'activity-log':
+        return role === 'admin' || role === 'translator'; // Hidden for developers
+      case 'settings':
+        return true; // Settings is visible to all roles
+      default:
+        return false;
+    }
+  };
+
   return (
-    <aside className="w-64 bg-gradient-to-b from-brand-purple-dark to-brand-cyan text-white flex flex-col p-5 shrink-0">
+    <aside className="w-56 bg-gradient-to-b from-brand-purple-dark to-brand-cyan text-white flex flex-col p-5 shrink-0">
       <div className="flex items-center mb-8">
-        <img src={gtnLogo} alt="GTN Logo" className="w-12 h-12 mr-4" />
-        <h1 className="text-2xl font-bold">GTN</h1>
+        <img src={gtnLogo} alt="GTN Logo" className="w-32 h-19 mr-1" />
+        <h1 className="text-2xl font-bold"></h1>
       </div>
 
       <nav className="flex-grow">
         <ul>
-          <li className="mb-4">
-            <Link
-              to="/"
-              className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
-            >
-              <FaHome /> Home
-            </Link>
-          </li>
-          <li className="mb-4">
-            <Link
-              to="/all-entries"
-              className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
-            >
-              <FaList /> All Entries
-            </Link>
-          </li>
-          <li className="mb-4">
-            <Link
-              to="/activity-log"
-              className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
-            >
-              <FaClock /> Activity Log
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/settings"
-              className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
-            >
-              <FaCog /> Settings
-            </Link>
-          </li>
+          {shouldShowNavItem('home') && (
+            <li className="mb-4">
+              <Link
+                to="/"
+                className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
+              >
+                <FaHome /> Home
+              </Link>
+            </li>
+          )}
+          {shouldShowNavItem('all-entries') && (
+            <li className="mb-4">
+              <Link
+                to="/all-entries"
+                className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
+              >
+                <FaList /> All Entries
+              </Link>
+            </li>
+          )}
+          {shouldShowNavItem('activity-log') && (
+            <li className="mb-4">
+              <Link
+                to="/activity-log"
+                className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
+              >
+                <FaClock /> Activity Log
+              </Link>
+            </li>
+          )}
+          {shouldShowNavItem('settings') && (
+            <li>
+              <Link
+                to="/settings"
+                className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light"
+              >
+                <FaCog /> Settings
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 

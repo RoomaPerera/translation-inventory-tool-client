@@ -6,7 +6,7 @@ import HomeToolbar from '../components/home/HomeToolbar';
 import TranslationTable from '../components/TranslationTable';
 import AddTranslationModal from '../components/AddTranslationModal';
 import EditTranslationModal from '../components/EditTranslationModal';
-import AddLanguageModal from '../components/AddLanguageModal';
+import AssignProjectLanguageModal from '../components/AssignProjectLanguageModal';
 import { Pagination } from '../components/reusableComponents/Pagination';
 import useDebounce from '../hooks/useDebounce';
 import translationService from '../services/translationService';
@@ -92,7 +92,13 @@ const Home = () => {
 
     const handlePageChange = (page) => setCurrentPage(page);
     const handleAddNew = () => setAddModalOpen(true);
-    const handleOpenLangModal = () => setLangModalOpen(true);
+    const handleOpenLangModal = () => {
+        if (!filters.projectId) {
+            alert('Please select a project first.');
+            return;
+        }
+        setLangModalOpen(true);
+    };
     const handleEdit = (translation) => { setEditingTranslation(translation); setEditModalOpen(true); };
     
     // --- 3. This function now ONLY opens the modal ---
@@ -143,7 +149,14 @@ const Home = () => {
                     ) : (
                         <>
                             {/* --- 5. Pass the correct handler to the table --- */}
-                            <TranslationTable user={user} translations={translations} onEdit={handleEdit} onDelete={(id) => handleDeleteRequest(translations.find(t => t._id === id))} />
+                            <TranslationTable 
+                                user={user} 
+                                translations={translations} 
+                                onEdit={handleEdit} 
+                                onDelete={(id) => handleDeleteRequest(translations.find(t => t._id === id))}
+                                currentPage={paginationData.currentPage}
+                                itemsPerPage={10}
+                            />
                             {paginationData.totalItems > 0 ? (
                                 <Pagination currentPage={paginationData.currentPage} totalItems={paginationData.totalItems} itemsPerPage={10} onPageChange={handlePageChange} />
                             ) : (
@@ -159,6 +172,7 @@ const Home = () => {
                 onClose={() => setAddModalOpen(false)}
                 onSave={fetchTranslations}
                 projectId={filters.projectId}
+                selectedProject={projects.find(p => p._id === filters.projectId)}
             />
             <EditTranslationModal
                 isOpen={isEditModalOpen}
@@ -166,9 +180,11 @@ const Home = () => {
                 onSave={fetchTranslations}
                 translation={editingTranslation}
             />
-            <AddLanguageModal
+            <AssignProjectLanguageModal
                 isOpen={isLangModalOpen}
                 onClose={() => setLangModalOpen(false)}
+                project={projects.find(p => p._id === filters.projectId)}
+                onSuccess={fetchTranslations}
             />
             {/* --- 6. Add the ConfirmModal to the page --- */}
             <ConfirmModal

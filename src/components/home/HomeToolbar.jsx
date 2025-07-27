@@ -1,14 +1,18 @@
 import React from 'react';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
+import { useLanguages } from '../../hooks/useLanguages';
 
 const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => {
+    const { languages, loading: languagesLoading } = useLanguages();
+    
+    // Create dynamic language options from fetched languages
     const langOptions = [
         { value: '', label: 'All Languages' },
-        { value: 'en', label: 'English' },
-        { value: 'fr', label: 'French' },
-        { value: 'es', label: 'Spanish' },
-        { value: 'ar', label: 'Arabic' },
+        ...languages.map(lang => ({
+            value: lang.code,
+            label: `${lang.name} (${lang.code.toUpperCase()})`
+        }))
     ];
     const showOptions = [
         { value: 'all', label: 'Show All Entries' },
@@ -38,9 +42,10 @@ const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => 
       
         <div className="w-48 mr-4">
           <Select
-              options={langOptions}
+              options={languagesLoading ? [{ value: '', label: 'Loading languages...' }] : langOptions}
               selected={filters.language}
               onSelect={(value) => onFilterChange('language', value)}
+              disabled={languagesLoading}
           />
         </div>
       

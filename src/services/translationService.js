@@ -1,5 +1,29 @@
 import API from './axiosInstance'; // Use the central, configured axios instance for all calls
 
+// Simple cache for frequently accessed data
+const cache = new Map();
+const CACHE_DURATION = 30000; // 30 seconds
+
+const getCacheKey = (url, params) => {
+    return `${url}?${JSON.stringify(params)}`;
+};
+
+const setCache = (key, data) => {
+    cache.set(key, {
+        data,
+        timestamp: Date.now()
+    });
+};
+
+const getCache = (key) => {
+    const cached = cache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        return cached.data;
+    }
+    cache.delete(key);
+    return null;
+};
+
 /**
  * REQ-9, 10, 11: Get translations with pagination and filtering.
  * @param {number} page - The current page number.
@@ -7,14 +31,26 @@ import API from './axiosInstance'; // Use the central, configured axios instance
  * @param {object} filters - An object containing filter criteria (e.g., { key, language, projectId }).
  * @returns {Promise} - The axios promise for the request.
  */
-const getTranslations = (page = 1, limit = 10, filters = {}) => {
+const getTranslations = async (page = 1, limit = 10, filters = {}) => {
     const params = {
         page,
         limit,
         ...filters
     };
-    // All API calls now go through the secure instance
-    return API.get('/translations', { params });
+    
+    const cacheKey = getCacheKey('/translations', params);
+    const cached = getCache(cacheKey);
+    if (cached) {
+        return { data: cached };
+    }
+    
+    try {
+        const response = await API.get('/translations', { params });
+        setCache(cacheKey, response.data);
+        return response;
+    } catch (error) {
+        throw error;
+    }
 };
 
 /**
@@ -22,7 +58,9 @@ const getTranslations = (page = 1, limit = 10, filters = {}) => {
  * @param {object} translationData - The data for the new translation.
  * @returns {Promise} - The axios promise for the request.
  */
-const addTranslation = (translationData) => {
+const addTranslation = async (translationData) => {
+    // Clear cache when adding new translations
+    cache.clear();
     return API.post('/translations', translationData);
 };
 
@@ -32,7 +70,9 @@ const addTranslation = (translationData) => {
  * @param {object} updatedData - The new data for the translation.
  * @returns {Promise} - The axios promise for the request.
  */
-const updateTranslation = (id, updatedData) => {
+const updateTranslation = async (id, updatedData) => {
+    // Clear cache when updating translations
+    cache.clear();
     return API.put(`/translations/${id}`, updatedData);
 };
 
@@ -41,8 +81,21 @@ const updateTranslation = (id, updatedData) => {
  * @param {string} id - The ID of the translation to delete.
  * @returns {Promise} - The axios promise for the request.
  */
-const deleteTranslation = (id) => {
+const deleteTranslation = async (id) => {
+    // Clear cache when deleting translations
+    cache.clear();
     return API.delete(`/translations/${id}`);
+};
+
+/**
+ * Add multiple translations at once (bulk creation)
+ * @param {Array} translationsArray - Array of translation objects to create
+ * @returns {Promise} - The axios promise for the request.
+ */
+const addBulkTranslations = async (translationsArray) => {
+    // Clear cache when adding new translations
+    cache.clear();
+    return API.post('/translations/bulk', { translations: translationsArray });
 };
 
 const translationService = {
@@ -50,6 +103,7 @@ const translationService = {
     addTranslation,
     updateTranslation,
     deleteTranslation,
+    addBulkTranslations,
 };
 
 export default translationService;
