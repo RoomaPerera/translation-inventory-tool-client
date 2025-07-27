@@ -11,7 +11,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 
 // Public pages
 import Login from "./pages/login";
-import Register from "./pages/Register";
+import Register from "./pages/Register.jsx";
 
 // Protected pages
 import Home from "./pages/Home";
