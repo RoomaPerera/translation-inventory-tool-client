@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Download, RefreshCw, TrendingUp, TrendingDown, Clock, Users, FileText, Star, AlertCircle } from 'lucide-react';
 import analyticsService from '../services/analyticsService';
+import axiosInstance from '../services/axiosInstance';
 
 const Analytics = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -113,6 +114,22 @@ const Analytics = () => {
 
   const { kpis, qualityTrend, processingTimes, productivity, projectStatus } = dashboardData;
 
+const populateData = async () => {
+    try {
+        setLoading(true);
+        const response = await axiosInstance.post('/analytics/populate');
+        console.log('Data populated:', response.data);
+        // Refresh the dashboard after population
+        await fetchDashboardData(selectedTimeRange);
+        alert('Analytics data populated successfully!');
+    } catch (error) {
+        console.error('Failed to populate data:', error);
+        alert('Failed to populate data. Check console for details.');
+    } finally {
+        setLoading(false);
+    }
+};
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -142,11 +159,20 @@ const Analytics = () => {
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </button>
+              <button
+                onClick={populateData}
+                disabled={loading}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Populate Data
+              </button>
               <div className="relative group">
                 <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </button>
+                
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="py-2">
                     <button
