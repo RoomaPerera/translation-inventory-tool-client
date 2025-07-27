@@ -1,24 +1,20 @@
-// Add a new activity log entry (cookie-based auth)
-export function addActivity(description) {
-  return fetch('/api/activitylogs', {
-    method: 'POST',
-    credentials: 'include', // Send HTTP-only cookie for authentication
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description })
-  })
-  .then(res => res.json());
-}
+import axiosInstance from './axiosInstance';
 
-// Fetch activity logs, optionally filtered by role or userId (cookie-based auth)
-export function fetchActivityLogs({ filterRole, userId } = {}) {
+// Fetch activity logs, optionally filtered by role or userId
+export function fetchActivityLogs({ filterRole, userId, startDate, endDate, limit } = {}) {
   const params = new URLSearchParams();
   if (filterRole) params.append('filterRole', filterRole);
-  if (userId)     params.append('userId', userId);
+  if (userId) params.append('userId', userId);
+  if (startDate) {
+    params.append('startDate', startDate.toISOString());
+  }
+  if (endDate) {
+    params.append('endDate', endDate.toISOString());
+  }
+  if (limit) params.append('limit', limit);
 
-  const url = params.toString() ? `/api/activitylogs?${params}` : '/api/activitylogs';
+  const url = params.toString() ? `/activitylogs?${params}` : '/activitylogs';
 
-  return fetch(url, {
-    credentials: 'include', // Send HTTP-only cookie for authentication
-  })
-  .then(res => res.json());
+  return axiosInstance.get(url)
+    .then(res => res.data);
 }

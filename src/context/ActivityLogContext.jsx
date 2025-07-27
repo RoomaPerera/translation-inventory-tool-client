@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { fetchActivityLogs } from "../services/activityLogApi";
 
@@ -15,26 +15,40 @@ export const ActivityLogProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+
       let response;
       if (user.role === "Admin") {
         response = await fetchActivityLogs(filters);
       } else {
-        response = await fetchActivityLogs(); // No filters for Translator
+        response = await fetchActivityLogs(filters); // Pass filters for Translator too
       }
+
+      // Handle axios response structure
       if (response && response.error) {
         setError(response.error);
         setLogs([]);
         return;
       }
-      if (Array.isArray(response)) {
-        setLogs(response);
+
+      // Check if response is an array (direct data) or has a data property
+      const logsData = Array.isArray(response)
+        ? response
+        : response?.data || [];
+
+      if (Array.isArray(logsData)) {
+        setLogs(logsData);
       } else {
         setError("Failed to fetch activity logs - unexpected response format");
+        setLogs([]);
       }
     } catch (err) {
+      console.error("Activity log fetch error:", err);
       setError(
-        err.message || "Failed to fetch activity logs. Please try again later."
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to fetch activity logs. Please try again later."
       );
+      setLogs([]);
     } finally {
       setLoading(false);
     }

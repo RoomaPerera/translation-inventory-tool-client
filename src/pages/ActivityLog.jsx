@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useActivityLog } from "../context/ActivityLogContext";
 import ActivityTable from "../components/ActivityTable";
-
-function capitalizeRole(role) {
-  if (!role) return "";
-  return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-}
 
 const ActivityLog = () => {
   const { user } = useAuthContext();
@@ -22,8 +16,6 @@ const ActivityLog = () => {
     userId: "",
   });
 
-  const navigate = useNavigate();
-
   useEffect(() => {
     if (user && user.role === "Admin") {
       getActivityLogs({
@@ -34,7 +26,10 @@ const ActivityLog = () => {
         endDate: filters.endDate,
       });
     } else if (user && user.role === "Translator") {
-      getActivityLogs(); // No filters for Translator
+      getActivityLogs({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      }); // Only date filters for Translator
     }
   }, [
     user,
@@ -96,7 +91,7 @@ const ActivityLog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
@@ -112,15 +107,31 @@ const ActivityLog = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Date Range
                 </label>
-                <div className="bg-white border border-gray-300 rounded-lg shadow-sm">
-                  <DatePicker
-                    selectsRange
-                    startDate={filters.startDate}
-                    endDate={filters.endDate}
-                    onChange={handleDateChange}
-                    className="w-64 px-3 py-2 border-0 focus:ring-2 focus:ring-purple-500 focus:border-transparent rounded-lg"
-                    placeholderText="Select date range"
-                  />
+                <div className="flex items-center space-x-2">
+                  <div className="bg-white border border-gray-300 rounded-lg shadow-sm">
+                    <DatePicker
+                      selectsRange
+                      startDate={filters.startDate}
+                      endDate={filters.endDate}
+                      onChange={handleDateChange}
+                      className="w-64 px-3 py-2 border-0 focus:ring-2 focus:ring-purple-500 focus:border-transparent rounded-lg"
+                      placeholderText="Select date range"
+                    />
+                  </div>
+                  {(filters.startDate || filters.endDate) && (
+                    <button
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          startDate: null,
+                          endDate: null,
+                        }))
+                      }
+                      className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
 
