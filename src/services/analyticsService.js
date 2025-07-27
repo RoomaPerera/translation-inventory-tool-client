@@ -1,83 +1,102 @@
-import API from './axiosInstance';
+import axiosInstance from './axiosInstance';
 
-class AnalyticsService {
-  // Get all dashboard data
-  async getAllDashboardData(timeRange = '7d') {
-    try {
-      const response = await API.get(`/analytics/dashboard?timeRange=${timeRange}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      throw error;
-    }
-  }
+export const analyticsService = {
+    // Get dashboard overview
+    getDashboardOverview: async () => {
+        const response = await axiosInstance.get('/analytics/overview');
+        return response.data;
+    },
 
-  // Export dashboard data
-  async exportDashboardData(format = 'json', timeRange = '7d') {
-    try {
-      const response = await API.get(`/analytics/export?format=${format}&timeRange=${timeRange}`, {
-        responseType: format === 'json' ? 'json' : 'blob'
-      });
+    // Get user-specific analytics
+    getUserAnalytics: async () => {
+        const response = await axiosInstance.get('/analytics/user');
+        return response.data;
+    },
 
-      if (format === 'json') {
-        // Create and download JSON file
-        const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-          type: 'application/json'
+    // Get chart data
+    getChartData: async (period = '7d') => {
+        const response = await axiosInstance.get(`/analytics/charts?period=${period}`);
+        return response.data;
+    },
+
+    // Method for your existing Analytics component
+    getAllDashboardData: async (timeRange = '7d') => {
+        try {
+            const [overview, userAnalytics, chartData] = await Promise.all([
+                analyticsService.getDashboardOverview(),
+                analyticsService.getUserAnalytics(),
+                analyticsService.getChartData(timeRange)
+            ]);
+
+            return {
+                overview,
+                userAnalytics,
+                chartData,
+                // Mock data for compatibility with your existing component
+                kpis: [
+                    {
+                        title: 'Total Projects',
+                        value: overview.totalProjects,
+                        change: '+12%',
+                        icon: 'FileText',
+                        color: 'blue'
+                    },
+                    {
+                        title: 'Total Translations',
+                        value: overview.totalTranslations,
+                        change: '+8%',
+                        icon: 'Users',
+                        color: 'green'
+                    },
+                    {
+                        title: 'Completion Rate',
+                        value: `${overview.completionRate}%`,
+                        change: '+5%',
+                        icon: 'TrendingUp',
+                        color: 'purple'
+                    },
+                    {
+                        title: 'Active Projects',
+                        value: overview.activeProjects,
+                        change: '+3%',
+                        icon: 'Clock',
+                        color: 'orange'
+                    }
+                ]
+            };
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            throw error;
+        }
+    },
+
+    // Export analytics
+    exportAnalytics: async (format = 'json') => {
+        const response = await axiosInstance.get(`/analytics/export?format=${format}`, {
+            responseType: format === 'csv' ? 'blob' : 'json'
         });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `analytics-report-${timeRange}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } else {
-        // Handle other formats when implemented
-        const blob = new Blob([response.data]);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `analytics-report-${timeRange}.${format}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }
+        
+        if (format === 'csv') {
+            // Handle CSV blob download
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'analytics.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        return response.data;
+    },
 
-      return response.data;
-    } catch (error) {
-      console.error('Failed to export dashboard data:', error);
-      throw error;
+    // Method for your existing Analytics component
+    exportDashboardData: async (format, timeRange) => {
+        return analyticsService.exportAnalytics(format);
     }
-  }
+};
 
-  // Get specific KPIs only
-  async getKPIs(timeRange = '7d') {
-    try {
-      const data = await this.getAllDashboardData(timeRange);
-      return data.kpis;
-    } catch (error) {
-      console.error('Failed to fetch KPIs:', error);
-      throw error;
-    }
-  }
-
-  // Get chart data only
-  async getChartData(timeRange = '7d') {
-    try {
-      const data = await this.getAllDashboardData(timeRange);
-      return {
-        qualityTrend: data.qualityTrend,
-        processingTimes: data.processingTimes,
-        productivity: data.productivity,
-        projectStatus: data.projectStatus
-      };
-    } catch (error) {
-      console.error('Failed to fetch chart data:', error);
-      throw error;
-    }
-  }
-}
-
-export default new AnalyticsService();
+// Default export for your existing import
+export default analyticsService;
