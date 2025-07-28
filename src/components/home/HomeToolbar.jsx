@@ -1,4 +1,5 @@
-import React from 'react';
+//import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
 import { useLanguages } from '../../hooks/useLanguages';
@@ -20,6 +21,15 @@ const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => 
         { value: 'approved', label: 'Approved Translations' }
     ];
     const typeOptions = [{ value: 'translations', label: 'Translations' }];
+
+    // Handle language selection
+    const handleLanguageSelect = (value) => {
+        console.log('HomeToolbar: Language selected:', value);
+        setSelectedLanguage(value);
+        if (onLanguageFilter) {
+            onLanguageFilter(value);
+        }
+    };
 
   return (
     <div className="flex items-center bg-white p-4 rounded-lg shadow-sm mb-5">

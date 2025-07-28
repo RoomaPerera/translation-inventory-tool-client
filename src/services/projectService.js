@@ -1,62 +1,56 @@
 import API from './axiosInstance';
 
-/**
- * Get all projects
- */
-const getAllProjects = () => {
-    return API.get('/projects');
-};
+// 🔹 Get all projects
+const getProjects = () => API.get('/projects');
 
-/**
- * Get a single project by ID
- */
-const getProjectById = (id) => {
-    return API.get(`/projects/${id}`);
-};
+// 🔹 Get project by ID
+const getProjectById = (id) => API.get(`/projects/${id}`);
 
-/**
- * Create a new project
- */
-const createProject = (projectData) => {
-    return API.post('/projects', projectData);
-};
+// 🔹 Create new project
+const addProject = (projectData) => API.post('/projects', projectData);
 
-/**
- * Update a project
- */
-const updateProject = (id, projectData) => {
-    return API.put(`/projects/${id}`, projectData);
-};
+// 🔹 Update project
+const updateProject = (id, projectData) => API.put(`/projects/${id}`, projectData);
 
-/**
- * Delete a project
- */
-const deleteProject = (id) => {
-    return API.delete(`/projects/${id}`);
-};
+// 🔹 Delete project
+const deleteProject = (id) => API.delete(`/projects/${id}`);
 
-/**
- * Get languages assigned to a project
- */
-const getProjectLanguages = (projectId) => {
-    return API.get(`/projects/${projectId}/languages`);
-};
+// 🔹 Assign multiple languages to a project
+const assignLanguagesToProject = (projectId, languages) => 
+  API.post(`/projects/${projectId}/languages`, { languages });
 
-/**
- * Assign languages to a project
- */
-const assignLanguagesToProject = (projectId, languages) => {
-    return API.post(`/projects/${projectId}/languages`, { languages });
-};
+// 🔹 Get languages assigned to a project
+const getProjectLanguages = (projectId) => 
+  API.get(`/projects/${projectId}/languages`);
+
+// 🔹 Set default language for a project
+const setProjectDefaultLanguage = (projectId, languageId) => 
+  API.put(`/projects/${projectId}/default-language`, { languageId });
+
+// 🔹 Get default language for a project
+const getProjectDefaultLanguage = (projectId) => 
+  API.get(`/projects/${projectId}/default-language`);
+
+// 🔹 Remove default language from a project
+const removeProjectDefaultLanguage = (projectId) => 
+  API.delete(`/projects/${projectId}/default-language`);
+
+// 🔹 Test API connection
+const testConnection = () => API.get('/test');
 
 const projectService = {
-    getAllProjects,
-    getProjectById,
-    createProject,
-    updateProject,
-    deleteProject,
-    getProjectLanguages,
-    assignLanguagesToProject,
+  getProjects,
+  getProjectById,
+  addProject,
+  updateProject,
+  deleteProject,
+  assignLanguagesToProject,
+  getProjectLanguages,
+  setProjectDefaultLanguage,
+  getProjectDefaultLanguage,
+  removeProjectDefaultLanguage,
+  testConnection,
 };
 
 export default projectService;
+

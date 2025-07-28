@@ -4,16 +4,33 @@ import Button from "../reusableComponents/Button";
 import { Select } from "../reusableComponents/Select";
 
 const HomeHeader = ({
-  user, // <-- 1. Receive the user object as a prop
-  searchTerm,
-  onSearchChange,
-  onAssignLanguageClick,
-  onAnomalyDashboardClick,
-  projects,
-  currentProjectId,
-  onProjectChange,
+    user, // <-- 1. Receive the user object as a prop
+    searchTerm,
+    onSearchChange,
+    onAssignLanguageClick,
+    onAnomalyDashboardClick,
+    projects = [],
+    currentProjectId,
+    onProjectChange,
+    selectedProject,
+    onProjectSelect,
+    loading = false,
 }) => {
-  const projectOptions = projects.map((p) => ({ value: p._id, label: p.name }));
+    const projectOptions = projects.length > 0 
+        ? projects.map(p => ({ value: p._id, label: p.name }))
+        : loading 
+        ? [{ value: 'loading', label: 'Loading projects...' }]
+        : [{ value: 'no-projects', label: 'No projects available' }];
+
+    // Handle project selection from dropdown
+    const handleProjectSelect = (selectedValue) => {
+        if (selectedValue === 'no-projects' || selectedValue === 'loading') return;
+        
+        const project = projects.find(p => p._id === selectedValue);
+        if (project && onProjectSelect) {
+            onProjectSelect(project);
+        }
+    };
 
   return (
     <div className="flex justify-between items-center bg-white p-4 px-5 rounded-lg shadow-sm mb-5">
@@ -25,6 +42,7 @@ const HomeHeader = ({
             options={projectOptions}
             selected={currentProjectId}
             onSelect={onProjectChange}
+            disabled={projects.length === 0 || loading}
           />
         </div>
         <div className="w-64">
