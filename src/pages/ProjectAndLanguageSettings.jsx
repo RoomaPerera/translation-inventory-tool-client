@@ -26,33 +26,51 @@ const ProjectAndLanguageSettings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectToDelete, setProjectToDelete] = useState(null);
+  
+  // FIXED: Always initialize as arrays to prevent filter errors
   const [projects, setProjects] = useState([]);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [languages, setLanguages] = useState([]);
+  
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const { user } = useAuthContext();
   const [showEditLanguageForm, setShowEditLanguageForm] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(null);
 
-  // Enhanced stats calculations
+  // FIXED: Enhanced stats calculations with array safety checks
   const stats = {
-    totalProjects: projects.length,
-    totalLanguages: languages.length,
-    projectsWithLanguages: projects.filter(p => p.languages?.length > 0).length,
-    averageLanguagesPerProject: projects.length > 0 
-      ? (projects.reduce((sum, p) => sum + (p.languages?.length || 0), 0) / projects.length).toFixed(1)
+    totalProjects: Array.isArray(projects) ? projects.length : 0,
+    totalLanguages: Array.isArray(languages) ? languages.length : 0,
+    projectsWithLanguages: Array.isArray(projects) 
+      ? projects.filter(p => Array.isArray(p.languages) && p.languages.length > 0).length 
+      : 0,
+    averageLanguagesPerProject: Array.isArray(projects) && projects.length > 0 
+      ? (projects.reduce((sum, p) => sum + (Array.isArray(p.languages) ? p.languages.length : 0), 0) / projects.length).toFixed(1)
       : 0
   };
 
-  // Fetch data functions
+  // FIXED: Enhanced fetch functions with proper error handling
   const fetchLanguages = async () => {
     setIsLoadingLanguages(true);
     try {
+      console.log('Fetching languages...');
       const languagesData = await languageService.getLanguages();
-      setLanguages(languagesData);
+      console.log('Languages response:', languagesData);
+      
+      // Ensure we always set an array
+      if (Array.isArray(languagesData)) {
+        setLanguages(languagesData);
+      } else if (languagesData && Array.isArray(languagesData.data)) {
+        setLanguages(languagesData.data);
+      } else {
+        console.warn('Languages response is not an array:', languagesData);
+        setLanguages([]);
+        showNotification('Unexpected response format for languages', 'error');
+      }
     } catch (error) {
       console.error('Failed to fetch languages:', error);
+      setLanguages([]); // Ensure array on error
       showNotification('Failed to fetch languages: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsLoadingLanguages(false);
@@ -62,10 +80,23 @@ const ProjectAndLanguageSettings = () => {
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
+      console.log('Fetching projects...');
       const projectsData = await projectService.getProjects();
-      setProjects(projectsData);
+      console.log('Projects response:', projectsData);
+      
+      // Ensure we always set an array
+      if (Array.isArray(projectsData)) {
+        setProjects(projectsData);
+      } else if (projectsData && Array.isArray(projectsData.data)) {
+        setProjects(projectsData.data);
+      } else {
+        console.warn('Projects response is not an array:', projectsData);
+        setProjects([]);
+        showNotification('Unexpected response format for projects', 'error');
+      }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+      setProjects([]); // Ensure array on error
       showNotification('Failed to fetch projects: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsLoadingProjects(false);
@@ -84,19 +115,37 @@ const ProjectAndLanguageSettings = () => {
     }, 5000);
   };
 
-  // Effects
+  // FIXED: Enhanced effects with better error handling
   useEffect(() => {
     const loadData = async () => {
+      if (!user) {
+        setIsPageLoading(false);
+        return;
+      }
+
       setIsPageLoading(true);
-      await Promise.all([fetchLanguages(), fetchProjects()]);
-      setIsPageLoading(false);
+      try {
+        await Promise.all([fetchLanguages(), fetchProjects()]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        showNotification('Failed to load initial data. Please refresh the page.', 'error');
+      } finally {
+        setIsPageLoading(false);
+      }
     };
     loadData();
-  }, []);
+  }, [user]);
 
   // Enhanced event handlers with notifications
   const handleDeleteProject = (projectOrId) => {
     console.log('handleDeleteProject called with:', projectOrId);
+    
+    // Ensure projects is an array before searching
+    if (!Array.isArray(projects)) {
+      console.warn('Projects is not an array when trying to delete:', projects);
+      showNotification('Cannot delete project: data error', 'error');
+      return;
+    }
     
     let project;
     if (typeof projectOrId === 'string') {
@@ -114,7 +163,10 @@ const ProjectAndLanguageSettings = () => {
   };
 
   const handleConfirmDelete = (projectId) => {
-    setProjects(projects.filter(project => project._id !== projectId));
+    // Ensure projects is an array before filtering
+    if (Array.isArray(projects)) {
+      setProjects(projects.filter(project => project._id !== projectId));
+    }
     setShowDeleteModal(false);
     setProjectToDelete(null);
     showNotification('Project deleted successfully!', 'success');
@@ -153,7 +205,7 @@ const ProjectAndLanguageSettings = () => {
     navigate('/project-details');
   };
 
-  // Enhanced handleDeleteLanguage function with default language protection
+  // FIXED: Enhanced handleDeleteLanguage function with array safety checks
   const handleDeleteLanguage = async (language) => {
     try {
       console.log('Deleting language:', language);
@@ -166,7 +218,9 @@ const ProjectAndLanguageSettings = () => {
         throw new Error('Language ID is missing');
       }
       
-      const projectsUsingAsDefault = projects.filter(project => {
+      // Ensure projects is an array before filtering
+      const safeProjects = Array.isArray(projects) ? projects : [];
+      const projectsUsingAsDefault = safeProjects.filter(project => {
         if (!project.defaultLanguage) return false;
         
         if (typeof project.defaultLanguage === 'string') {
@@ -195,16 +249,17 @@ const ProjectAndLanguageSettings = () => {
       console.log('Language deleted from database successfully');
       
       setLanguages(prev => {
-        const filtered = prev.filter(lang => 
+        const safeArray = Array.isArray(prev) ? prev : [];
+        const filtered = safeArray.filter(lang => 
           (lang._id || lang.id) !== languageId
         );
-        console.log(`Removed language from state. Before: ${prev.length}, After: ${filtered.length}`);
+        console.log(`Removed language from state. Before: ${safeArray.length}, After: ${filtered.length}`);
         return filtered;
       });
       
       const updatedProjects = [];
-      const projectsToUpdate = projects.filter(project => {
-        if (!project.languages || project.languages.length === 0) return false;
+      const projectsToUpdate = safeProjects.filter(project => {
+        if (!Array.isArray(project.languages) || project.languages.length === 0) return false;
         
         return project.languages.some(lang => {
           if (typeof lang === 'string') {
@@ -222,16 +277,18 @@ const ProjectAndLanguageSettings = () => {
         try {
           console.log(`Updating project: ${project.name} (ID: ${project._id})`);
           
-          const updatedLanguages = project.languages.filter(lang => {
-            if (typeof lang === 'string') {
-              return lang !== languageCode;
-            } else if (typeof lang === 'object') {
-              return lang.code !== languageCode && (lang._id || lang.id) !== languageId;
-            }
-            return true;
-          });
+          const updatedLanguages = Array.isArray(project.languages) 
+            ? project.languages.filter(lang => {
+                if (typeof lang === 'string') {
+                  return lang !== languageCode;
+                } else if (typeof lang === 'object') {
+                  return lang.code !== languageCode && (lang._id || lang.id) !== languageId;
+                }
+                return true;
+              })
+            : [];
           
-          console.log(`Project ${project.name}: Languages before: ${project.languages.length}, after: ${updatedLanguages.length}`);
+          console.log(`Project ${project.name}: Languages before: ${Array.isArray(project.languages) ? project.languages.length : 0}, after: ${updatedLanguages.length}`);
           
           const updatedProject = await projectService.updateProject(project._id, {
             ...project,
@@ -251,10 +308,13 @@ const ProjectAndLanguageSettings = () => {
       }
       
       if (updatedProjects.length > 0) {
-        setProjects(prev => prev.map(project => {
-          const updatedProject = updatedProjects.find(up => up._id === project._id);
-          return updatedProject || project;
-        }));
+        setProjects(prev => {
+          const safeArray = Array.isArray(prev) ? prev : [];
+          return safeArray.map(project => {
+            const updatedProject = updatedProjects.find(up => up._id === project._id);
+            return updatedProject || project;
+          });
+        });
         
         showNotification(
           `🗑️ Language "${languageName}" deleted and removed from ${updatedProjects.length} project(s)!`, 
@@ -288,12 +348,12 @@ const ProjectAndLanguageSettings = () => {
   };
 
   const handleEditLanguage = (language) => {
-  setSelectedLanguage(language);
-  setShowEditLanguageForm(true);
-  setShowAddForm(false);
-  setShowAddLanguageForm(false);
-  setShowDeleteModal(false);
-};
+    setSelectedLanguage(language);
+    setShowEditLanguageForm(true);
+    setShowAddForm(false);
+    setShowAddLanguageForm(false);
+    setShowDeleteModal(false);
+  };
 
   const closeModal = () => {
     setShowAddForm(false);
@@ -324,7 +384,7 @@ const ProjectAndLanguageSettings = () => {
             await fetchProjects();
             showNotification('Project added successfully!', 'success');
           }} 
-          availableLanguages={languages}
+          availableLanguages={Array.isArray(languages) ? languages : []}
         />
       );
     }
@@ -338,7 +398,7 @@ const ProjectAndLanguageSettings = () => {
             await fetchProjects();
             showNotification('Project updated successfully!', 'success');
           }} 
-          availableLanguages={languages}
+          availableLanguages={Array.isArray(languages) ? languages : []}
         />
       );
     }
@@ -351,25 +411,25 @@ const ProjectAndLanguageSettings = () => {
             await fetchLanguages();
             showNotification('Language added successfully!', 'success');
           }}
-          existingLanguages={languages}
+          existingLanguages={Array.isArray(languages) ? languages : []}
         />
       );
     }
 
- if (showEditLanguageForm && selectedLanguage) {
-    return (
-      <EditLanguageForm 
-        language={selectedLanguage}
-        onSuccess={async () => {
-          closeModal();
-          await fetchLanguages();
-          await fetchProjects(); // Refresh projects in case language was used in projects
-          showNotification('Language updated successfully!', 'success');
-        }}
-        existingLanguages={languages}
-      />
-    );
-  }
+    if (showEditLanguageForm && selectedLanguage) {
+      return (
+        <EditLanguageForm 
+          language={selectedLanguage}
+          onSuccess={async () => {
+            closeModal();
+            await fetchLanguages();
+            await fetchProjects(); // Refresh projects in case language was used in projects
+            showNotification('Language updated successfully!', 'success');
+          }}
+          existingLanguages={Array.isArray(languages) ? languages : []}
+        />
+      );
+    }
 
     if (showDeleteModal && projectToDelete) {
       return (
@@ -446,9 +506,6 @@ const ProjectAndLanguageSettings = () => {
                   <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded-lg text-xs font-medium">
                     {stats.projectsWithLanguages} Active
                   </span>
-                  {/* <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
-                    {stats.averageLanguagesPerProject} Avg Languages
-                  </span> */}
                 </div>
               )}
             </div>
@@ -487,16 +544,24 @@ const ProjectAndLanguageSettings = () => {
                 <div className="text-2xl font-bold text-indigo-600">{stats.totalLanguages}</div>
                 <div className="text-sm text-slate-600">Available Languages</div>
               </div>
-              {/* <div className="text-center">
-                <div className="text-2xl font-bold text-slate-600">{stats.averageLanguagesPerProject}</div>
-                <div className="text-sm text-slate-600">Avg per Project</div>
-              </div> */}
             </div>
           </div>
         )}
       </div>
     </div>
   );
+
+  // FIXED: Added user check for early return
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-slate-800">Please log in to access this page</h2>
+          <p className="text-slate-600">You need to be logged in to manage projects and languages.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isPageLoading) {
     return (
@@ -558,7 +623,7 @@ const ProjectAndLanguageSettings = () => {
               
               <div className="space-y-4 sm:space-y-6">
                 <LanguageManagement
-                  languages={languages}
+                  languages={Array.isArray(languages) ? languages : []}
                   isLoadingLanguages={isLoadingLanguages}
                   onAddLanguage={handleAddLanguage}
                   onEditLanguage={handleEditLanguage}  

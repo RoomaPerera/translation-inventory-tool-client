@@ -1,13 +1,13 @@
 import API from './axiosInstance';
 
 // 🔹 Get all projects
-const getAllProjects = () => API.get('/projects');
+const getProjects = () => API.get('/projects');
 
 // 🔹 Get project by ID
 const getProjectById = (id) => API.get(`/projects/${id}`);
 
 // 🔹 Create new project
-const createProject = (projectData) => API.post('/projects', projectData);
+const addProject = (projectData) => API.post('/projects', projectData);
 
 // 🔹 Update project
 const updateProject = (id, projectData) => API.put(`/projects/${id}`, projectData);
@@ -39,9 +39,9 @@ const removeProjectDefaultLanguage = (projectId) =>
 const testConnection = () => API.get('/test');
 
 const projectService = {
-  getAllProjects,
+  getProjects,
   getProjectById,
-  createProject,
+  addProject,
   updateProject,
   deleteProject,
   assignLanguagesToProject,
