@@ -107,7 +107,6 @@ const AddTranslationModal = ({ isOpen, onClose, onSave }) => {
                                 <input name="language" placeholder="Language Code (e.g., en, es, fr)" value={formData.language} onChange={handleChange} className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base" required />
                                 <textarea name="translatedText" placeholder="Translated Text" rows="4" value={formData.translatedText} onChange={handleChange} className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base" required />
                             </div>
-
                             {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
 
                             <div className="flex justify-end gap-4 mt-auto pt-6">

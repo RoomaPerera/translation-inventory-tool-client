@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import useDebounce from "../hooks/useDebounce"; // Import the debounce hook
-import TranslationHelper from "./home/TranslationHelper"; // Import the helper panel
+import useDebounce from "../hooks/useDebounce";
+import TranslationHelper from "./home/TranslationHelper";
 import nlpService from "../services/nlpService";
 import translationService from "../services/translationService";
+import { useCollaboration } from "../hooks/useCollaboration";
 import {
     ConnectionStatus,
     ActiveUsers,
-    TypingIndicator,
     ConflictModal,
-    SaveIndicator,
 } from "./CollaborationComponents/CollaborationIndicators";
 import "../styles/modal.css";
 
@@ -20,7 +19,7 @@ const EditTranslationModal = ({
     currentUser,
     userService,
 }) => {
-    // Form state, pre-filled from the `translation` prop
+    // Form state
     const [formData, setFormData] = useState({
         translationKey: "",
         translatedText: "",
@@ -32,35 +31,53 @@ const EditTranslationModal = ({
     // State for the Translation Helper
     const [suggestions, setSuggestions] = useState([]);
     const [isLoadingNlp, setIsLoadingNlp] = useState(false);
-
-    // We will debounce the `translationKey` from our form's state
     const debouncedKey = useDebounce(formData.translationKey, 500);
-
     const [error, setError] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    // Collaboration state
-    const [isConnected, setIsConnected] = useState(true);
-    const [connectionError, setConnectionError] = useState("");
-    const [activeUsers, setActiveUsers] = useState([]);
-    const [typingUsers, setTypingUsers] = useState([]);
-    const [conflictData, setConflictData] = useState(null);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [isCurrentUserTyping, setIsCurrentUserTyping] = useState(false);
+    // Use the collaboration hook only when we have a translation ID
+    const collaborationEnabled = translation?._id && isOpen;
+    const collaboration = useCollaboration({
+        translationId: collaborationEnabled ? translation._id : null,
+    });
 
-    // Refs for collaboration
-    const wsRef = useRef(null);
-    const typingTimeoutRef = useRef(null);
+    // Safely extract values from collaboration hook with proper fallbacks
+    const {
+        isConnected,
+        connectionError,
+        activeUsers,
+        typingUsers,
+        isTyping,
+        hasUnsavedChanges: collaborationUnsavedChanges,
+        conflictData,
+        handleTextChange,
+        handleSaveTranslation,
+        handleResolveConflict,
+        handleStartTyping,
+        handleStopTyping,
+    } = collaboration || {
+        isConnected: false,
+        connectionError: null,
+        activeUsers: [],
+        typingUsers: [],
+        isTyping: false,
+        hasUnsavedChanges: false,
+        conflictData: null,
+        handleTextChange: () => { },
+        handleSaveTranslation: () => { },
+        handleResolveConflict: () => { },
+        handleStartTyping: () => { },
+        handleStopTyping: () => { },
+    };
+
     const lastSavedData = useRef({});
+    const typingTimeoutRef = useRef(null);
 
     // Role-based permissions
-    const canEditMetadata =
-        currentUser?.role === "admin" || currentUser?.role === "developer";
-    const canEditTranslation = ["admin", "developer", "translator"].includes(
-        currentUser?.role
-    );
+    const canEditTranslationKey = currentUser?.role !== "translator";
+    const canEditTranslation = true;
 
-    // Effect to populate the form when the modal opens or the `translation` prop changes
+    // Effect to populate the form when the modal opens
     useEffect(() => {
         if (translation) {
             const newFormData = {
@@ -72,19 +89,11 @@ const EditTranslationModal = ({
             };
             setFormData(newFormData);
             lastSavedData.current = { ...newFormData };
-            setHasUnsavedChanges(false);
-
-            // Clear old NLP results when a new translation is loaded
             setSuggestions([]);
-
-            // Initialize WebSocket connection for collaboration
-            if (translation._id) {
-                initializeWebSocket(translation._id);
-            }
         }
     }, [translation]);
 
-    // Effect to fetch NLP data when the debounced source text (`translationKey`) changes
+    // Effect to fetch NLP data
     useEffect(() => {
         if (debouncedKey) {
             const fetchNlpData = async () => {
@@ -108,175 +117,70 @@ const EditTranslationModal = ({
         }
     }, [debouncedKey, formData.product]);
 
-    // Check for unsaved changes
-    useEffect(() => {
-        const hasChanges =
-            JSON.stringify(formData) !== JSON.stringify(lastSavedData.current);
-        setHasUnsavedChanges(hasChanges);
-    }, [formData]);
-
-    // Initialize WebSocket connection
-    const initializeWebSocket = (translationId) => {
-        try {
-            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-            const wsUrl = `${protocol}//${window.location.host}/ws/translation/${translationId}`;
-
-            wsRef.current = new WebSocket(wsUrl);
-
-            wsRef.current.onopen = () => {
-                setIsConnected(true);
-                setConnectionError("");
-                // Join the collaboration session
-                wsRef.current.send(
-                    JSON.stringify({
-                        type: "join",
-                        userId: currentUser?.id,
-                        translationId,
-                    })
-                );
-            };
-
-            wsRef.current.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                handleWebSocketMessage(data);
-            };
-
-            wsRef.current.onclose = () => {
-                setIsConnected(false);
-                setConnectionError("Connection lost");
-            };
-
-            wsRef.current.onerror = (error) => {
-                setIsConnected(false);
-                setConnectionError("Connection error");
-            };
-        } catch (error) {
-            console.error("Failed to initialize WebSocket:", error);
-            setIsConnected(false);
-            setConnectionError("Failed to connect");
-        }
-    };
-
-    // Handle WebSocket messages
-    const handleWebSocketMessage = (data) => {
-        switch (data.type) {
-            case "users-updated":
-                setActiveUsers(data.users || []);
-                break;
-            case "typing-start":
-                setTypingUsers((prev) => [
-                    ...prev.filter((id) => id !== data.userId),
-                    data.userId,
-                ]);
-                break;
-            case "typing-stop":
-                setTypingUsers((prev) => prev.filter((id) => id !== data.userId));
-                break;
-            case "translation-updated":
-                if (data.userId !== currentUser?.id) {
-                    // Check for conflicts
-                    if (hasUnsavedChanges) {
-                        setConflictData(data);
-                    } else {
-                        // Apply remote changes
-                        setFormData((prevData) => ({
-                            ...prevData,
-                            translatedText: data.translatedText,
-                        }));
-                        lastSavedData.current.translatedText = data.translatedText;
-                    }
-                }
-                break;
-        }
-    };
-
-    // Cleanup WebSocket on unmount
-    useEffect(() => {
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
-            if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-            }
-        };
-    }, []);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // Role-based field restrictions
-        if (
-            (name === "translationKey" || name === "language") &&
-            !canEditMetadata
-        ) {
-            return; // Prevent editing if user doesn't have permission
+        // Role-based restrictions
+        if (name === "translationKey" && !canEditTranslationKey) {
+            return;
         }
 
         if (name === "translatedText" && !canEditTranslation) {
-            return; // Prevent editing if user doesn't have permission
+            return;
         }
 
         setFormData({ ...formData, [name]: value });
 
-        // Handle typing indicators for translation text
-        if (
-            name === "translatedText" &&
-            wsRef.current &&
-            wsRef.current.readyState === WebSocket.OPEN
-        ) {
-            setIsCurrentUserTyping(true);
-
-            // Send typing start
-            wsRef.current.send(
-                JSON.stringify({
-                    type: "typing-start",
-                    userId: currentUser?.id,
-                    translationId: translation._id,
-                })
-            );
+        // Handle typing indicators specifically for translation text
+        if (name === "translatedText" && collaborationEnabled) {
+            // Start typing indicator
+            handleStartTyping();
 
             // Clear existing timeout
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
 
-            // Set timeout to send typing stop
+            // Set timeout to stop typing indicator
             typingTimeoutRef.current = setTimeout(() => {
-                setIsCurrentUserTyping(false);
-                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    wsRef.current.send(
-                        JSON.stringify({
-                            type: "typing-stop",
-                            userId: currentUser?.id,
-                            translationId: translation._id,
-                        })
-                    );
-                }
+                handleStopTyping();
             }, 1000);
+
+            // Handle text change for collaboration
+            handleTextChange(value, { autoSave: false }); // Don't auto-save on every keystroke
         }
     };
 
     const handleSuggestionClick = (text) => {
         setFormData({ ...formData, translatedText: text });
+        // Trigger collaboration update only if enabled
+        if (collaborationEnabled) {
+            handleTextChange(text, { autoSave: false });
+        }
     };
 
     const handleVersionRevert = (newText) => {
         setFormData({ ...formData, translatedText: newText });
+        if (collaborationEnabled) {
+            handleTextChange(newText, { autoSave: false });
+        }
     };
 
     const handleConflictResolve = (resolution, localText = null) => {
         if (resolution === "accept-server") {
-            setFormData((prevData) => ({
-                ...prevData,
-                translatedText: conflictData.translatedText,
+            handleResolveConflict("accept-server", null);
+            // Update form with server text
+            setFormData(prev => ({
+                ...prev,
+                translatedText: conflictData.serverText
             }));
-            lastSavedData.current.translatedText = conflictData.translatedText;
-            setHasUnsavedChanges(false);
         } else if (resolution === "keep-local") {
+            handleResolveConflict("keep-local", formData.translatedText);
         }
-        setConflictData(null);
     };
+
+    // Calculate if there are unsaved changes
+    const hasUnsavedChanges = collaborationUnsavedChanges || JSON.stringify(formData) !== JSON.stringify(lastSavedData.current);
 
     const handleSaveChanges = async () => {
         if (!hasUnsavedChanges) return;
@@ -287,30 +191,19 @@ const EditTranslationModal = ({
         const updateData = {
             translatedText: formData.translatedText,
             status: formData.status,
+            language: formData.language,
         };
 
-        // Add metadata fields if user has permission
-        if (canEditMetadata) {
+        if (canEditTranslationKey) {
             updateData.translationKey = formData.translationKey;
-            updateData.language = formData.language;
         }
 
         try {
             await translationService.updateTranslation(translation._id, updateData);
             lastSavedData.current = { ...formData };
-            setHasUnsavedChanges(false);
 
-            // Broadcast changes to other users
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(
-                    JSON.stringify({
-                        type: "translation-updated",
-                        userId: currentUser?.id,
-                        translationId: translation._id,
-                        translatedText: formData.translatedText,
-                    })
-                );
-            }
+            // Save through collaboration system
+            handleSaveTranslation(formData.translatedText);
 
             onSave();
         } catch (err) {
@@ -326,9 +219,16 @@ const EditTranslationModal = ({
         onClose();
     };
 
+    // Get typing users for translation field specifically
+    const translationFieldTypingUsers = typingUsers.filter(userId => userId !== currentUser?.id);
+
     const modalStyle = {
         width: "900px",
         maxWidth: "95vw",
+        height: "600px", // Fixed height to prevent resizing
+        maxHeight: "90vh",
+        display: "flex",
+        flexDirection: "column",
     };
 
     if (!isOpen) return null;
@@ -349,18 +249,20 @@ const EditTranslationModal = ({
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <ConnectionStatus
-                            isConnected={isConnected}
-                            connectionError={connectionError}
-                        />
+                        {collaborationEnabled && (
+                            <ConnectionStatus
+                                isConnected={isConnected}
+                                connectionError={connectionError}
+                            />
+                        )}
                         <button onClick={onClose} className="modal-close-button">
                             ×
                         </button>
                     </div>
                 </div>
 
-                {/* Active Users - positioned right below header */}
-                {activeUsers.length > 0 && (
+                {/* Active Users - only show if collaboration is enabled */}
+                {collaborationEnabled && activeUsers.length > 0 && (
                     <div className="px-6 py-2 border-b bg-gray-50">
                         <ActiveUsers
                             users={activeUsers}
@@ -370,18 +272,18 @@ const EditTranslationModal = ({
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-6 p-6">
+                <div className="grid grid-cols-2 gap-6 p-6 flex-1 overflow-hidden">
                     {/* Column 1: The Form */}
-                    <div className="modal-body !p-0">
+                    <div className="modal-body !p-0 flex flex-col h-full">
                         <form onSubmit={handleSubmit} className="flex flex-col h-full">
-                            <div className="space-y-5">
-                                {/* The translation key - editable only for admin/developer */}
+                            <div className="space-y-5 flex-1 overflow-y-auto">
+                                {/* Translation key */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">
                                         Translation Key (Source Text)
-                                        {!canEditMetadata && (
+                                        {!canEditTranslationKey && (
                                             <span className="text-xs text-gray-400 ml-2">
-                                                (Read-only)
+                                                (Read-only for translators)
                                             </span>
                                         )}
                                     </label>
@@ -390,65 +292,69 @@ const EditTranslationModal = ({
                                         name="translationKey"
                                         value={formData.translationKey}
                                         onChange={handleChange}
-                                        readOnly={!canEditMetadata}
-                                        className={`w-full p-2 border-b-2 ${canEditMetadata
+                                        readOnly={!canEditTranslationKey}
+                                        className={`w-full p-2 border-b-2 ${canEditTranslationKey
                                             ? "border-gray-300 focus:outline-none focus:border-brand-purple-base"
                                             : "bg-gray-100 border-gray-300 cursor-not-allowed"
                                             }`}
                                     />
                                 </div>
 
-                                {/* Language field - editable only for admin/developer */}
-                                {canEditMetadata && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-600 mb-1">
-                                            Language
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="language"
-                                            value={formData.language}
-                                            onChange={handleChange}
-                                            className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base"
-                                        />
-                                    </div>
-                                )}
+                                {/* Language field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                                        Language
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="language"
+                                        value={formData.language}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base"
+                                    />
+                                </div>
 
-                                {/* Typing Indicator - positioned above textarea */}
-                                <TypingIndicator
-                                    typingUsers={typingUsers}
-                                    currentUserId={currentUser?.id}
-                                    userService={userService}
-                                />
-
+                                {/* Translation text with specific typing indicator */}
                                 <div className="relative">
+                                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                                        Translation Text
+                                    </label>
+
+                                    {/* Typing indicator specifically for translation field - only show if collaboration enabled */}
+                                    {collaborationEnabled && translationFieldTypingUsers.length > 0 && (
+                                        <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                                <span className="text-sm text-blue-700">
+                                                    {translationFieldTypingUsers
+                                                        .map(userId => userService?.getUser?.(userId)?.name || `User ${userId.slice(-3)}`)
+                                                        .join(', ')}
+                                                    {translationFieldTypingUsers.length === 1 ? ' is' : ' are'} typing in this field...
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <textarea
                                         name="translatedText"
-                                        placeholder={
-                                            canEditTranslation
-                                                ? "Translated Text"
-                                                : "You don't have permission to edit translations"
-                                        }
+                                        placeholder="Enter your translation here..."
                                         rows="4"
                                         value={formData.translatedText}
                                         onChange={handleChange}
-                                        readOnly={!canEditTranslation}
-                                        className={`w-full p-2 border-b-2 ${canEditTranslation
-                                            ? "border-gray-300 focus:outline-none focus:border-brand-purple-base"
-                                            : "bg-gray-100 border-gray-300 cursor-not-allowed"
-                                            }`}
+                                        className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base resize-none"
                                         required
                                     />
-                                    {!canEditTranslation && (
-                                        <div className="absolute inset-0 bg-gray-50 bg-opacity-50 flex items-center justify-center">
-                                            <span className="text-sm text-gray-500 bg-white px-2 py-1 rounded shadow">
-                                                Editing restricted to your role
-                                            </span>
+
+                                    {/* Show if current user is typing - only if collaboration enabled */}
+                                    {collaborationEnabled && isTyping && (
+                                        <div className="absolute -bottom-6 left-0 flex items-center space-x-1 text-xs text-gray-500">
+                                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-ping" />
+                                            <span>You're typing...</span>
                                         </div>
                                     )}
                                 </div>
 
-                                <div>
+                                <div className="mt-8">
                                     <label className="block text-sm font-medium text-gray-600 mb-1">
                                         Status
                                     </label>
@@ -462,18 +368,12 @@ const EditTranslationModal = ({
                                         <option value="approved">Approved</option>
                                     </select>
                                 </div>
+
+                                {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
                             </div>
 
-                            {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-
-                            <div className="flex justify-between items-center mt-auto pt-6">
-                                {/* Save Indicator - positioned on the left */}
-                                <SaveIndicator
-                                    hasUnsavedChanges={hasUnsavedChanges}
-                                    onSave={handleSaveChanges}
-                                    isTyping={isCurrentUserTyping}
-                                />
-
+                            {/* Save buttons - fixed at bottom */}
+                            <div className="flex justify-end items-center pt-6 border-t bg-white">
                                 <div className="flex gap-4">
                                     <button
                                         type="button"
@@ -484,7 +384,7 @@ const EditTranslationModal = ({
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSaving || !canEditTranslation}
+                                        disabled={isSaving}
                                         className="py-2 px-5 rounded-md bg-brand-purple-base text-white font-semibold transition hover:bg-opacity-80 disabled:bg-opacity-50"
                                     >
                                         {isSaving ? "Saving..." : "Save & Close"}
@@ -494,8 +394,8 @@ const EditTranslationModal = ({
                         </form>
                     </div>
 
-                    {/* Column 2: The Helper Panel */}
-                    <div>
+                    {/* Column 2: The Helper Panel with fixed height and scrollable content */}
+                    <div className="h-full overflow-hidden">
                         <TranslationHelper
                             suggestions={suggestions}
                             translationId={translation?._id}
@@ -507,12 +407,14 @@ const EditTranslationModal = ({
                     </div>
                 </div>
 
-                {/* Conflict Resolution Modal */}
-                <ConflictModal
-                    conflictData={conflictData}
-                    onResolve={handleConflictResolve}
-                    currentText={formData.translatedText}
-                />
+                {/* Conflict Resolution Modal - only show if collaboration enabled */}
+                {collaborationEnabled && (
+                    <ConflictModal
+                        conflictData={conflictData}
+                        onResolve={handleConflictResolve}
+                        currentText={formData.translatedText}
+                    />
+                )}
             </div>
         </div>
     );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CancelButton from './CancelButton';
 import SaveButton from './SaveButton';
-import { useLanguages } from '../../../hooks/useLanguages';
+import { useLanguages } from '../../hooks/useLanguages';
 
 export default function LanguageModal({
     open,

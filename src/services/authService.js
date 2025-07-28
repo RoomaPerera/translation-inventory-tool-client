@@ -1,8 +1,15 @@
 import API from './axiosInstance';
 
 // Register a new user (self-registration, pending approval)
-export const registerUser = (userData) =>
-    API.post('/auth/register', userData);
+export const registerUser = (userName, email, password, role, languages) => {
+    return API.post('/auth/register', {
+        userName,
+        email,
+        password,
+        role,
+        languages
+    });
+};
 
 // Login a user (returns     cookie with JWT)
 export const loginUser = (credentials) =>
