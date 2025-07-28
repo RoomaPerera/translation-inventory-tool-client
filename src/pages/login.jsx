@@ -34,6 +34,7 @@ const LoginPage = () => {
       }
 
       localStorage.setItem('token', data.token);
+      // console.log("kjhskjh",data.token)
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/');
     } catch (err) {

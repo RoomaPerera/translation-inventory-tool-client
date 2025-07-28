@@ -42,6 +42,12 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
     }
   }, [translation]);
 
+useEffect(() => {
+  if (qualityCheckResult) {
+    console.log("Quality Check Result:", qualityCheckResult);
+  }
+}, [qualityCheckResult]);
+
   useEffect(() => {
     if (debouncedKey) {
       const fetchNlpData = async () => {
@@ -105,13 +111,22 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
     setQualityCheckError('');
     setQualityCheckResult(null);
     setQualityCheckLoading(true);
+    const token = localStorage.getItem('token'); // or sessionStorage
 
     try {
-      const response = await axios.post('/api/translations/quality-check', {
-        inputText: formData.translationKey,
-        translatedText: formData.translatedText,
-        expectedTargetLanguage: translation?.language || ''
-      });
+      const response = await axios.post(
+        '/api/translations/quality-check',
+        {
+          inputText: formData.translationKey,
+          translatedText: formData.translatedText,
+          expectedTargetLanguage: translation?.language || ''
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       setQualityCheckResult(response.data);
     } catch (err) {
       setQualityCheckError(err.response?.data?.error || 'Quality check failed');
@@ -171,9 +186,13 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
                   required
                 />
 
+{//---------------------------------------------
+}
+
                 {/* Translation Quality Check */}
                 <div className="space-y-3 border-t border-gray-200 pt-4 mt-4">
                   <h3 className="text-lg font-bold text-indigo-700">Translation Quality Check</h3>
+
 
                   <button
                     type="button"
@@ -188,6 +207,8 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
                     <p className="text-red-600 mt-2">{qualityCheckError}</p>
                   )}
 
+                
+
                   {qualityCheckResult && (
                     <div className="mt-4 bg-gray-50 p-3 rounded space-y-1">
                       <p><strong>Detected Target Language:</strong> {qualityCheckResult.detectedTargetLanguage}</p>
@@ -197,11 +218,19 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
                           {qualityCheckResult.languageMatch ? "Yes" : "No"}
                         </span>
                       </p>
+                      <p>
+                        <strong>Translation Match:</strong>{' '}
+                        <span className={qualityCheckResult.checkPassed ? "text-green-600" : "text-red-600"}>
+                          {qualityCheckResult.checkPassed ? "Yes" : "No"}
+                        </span>
+                      </p>
+                      
                       <p><strong>Score:</strong> {qualityCheckResult.score}</p>
                       <p><strong>Marks:</strong> {qualityCheckResult.marks}</p>
                     </div>
                   )}
                 </div>
+                {/* //================================= */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">
