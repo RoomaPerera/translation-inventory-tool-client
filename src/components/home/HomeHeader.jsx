@@ -45,12 +45,20 @@ const HomeHeader = ({
             Anomaly Dashboard
           </Button>
         )}
-        <Button
-          onClick={onAssignLanguageClick}
-          className="bg-brand-purple-base hover:bg-opacity-80 text-white !py-2.5 !px-4"
-        >
-          + Assign New Language
-        </Button>
+        {/* Only show Assign New Language button for Admin */}
+        {user && user.role === "Admin" && (
+          <Button
+            onClick={onAssignLanguageClick}
+            disabled={!currentProjectId}
+            className={`hover:bg-opacity-80 text-white !py-2.5 !px-4 ${
+              currentProjectId
+                ? "bg-brand-purple-base"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            + Assign New Language
+          </Button>
+        )}
       </div>
     </div>
   );

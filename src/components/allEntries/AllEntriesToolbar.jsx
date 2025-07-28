@@ -1,11 +1,16 @@
 import React from 'react';
 import { Select } from '../reusableComponents/Select';
+import { useLanguages } from '../../hooks/useLanguages';
 
 const AllEntriesToolbar = ({
     projects,
     currentProjectId,
-    onProjectChange
+    onProjectChange,
+    currentLanguage,
+    onLanguageChange
 }) => {
+    const { languages, loading: languagesLoading } = useLanguages();
+
     // Start with the "All Projects" option
     const projectOptions = [{ value: '', label: 'All Projects' }];
 
@@ -16,7 +21,16 @@ const AllEntriesToolbar = ({
         });
     }
 
+    // Create dynamic language options
     const langOptions = [{ value: 'all', label: 'All Languages' }];
+    if (languages && languages.length > 0) {
+        languages.forEach(lang => {
+            langOptions.push({ 
+                value: lang.code, 
+                label: `${lang.name} (${lang.code})` 
+            });
+        });
+    }
 
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm mb-5 flex items-center">
@@ -33,8 +47,10 @@ const AllEntriesToolbar = ({
                 <Select
                     label="Language"
                     options={langOptions}
-                    selected={'all'}
-                    onSelect={() => {}} // This can be wired up later if needed
+                    selected={currentLanguage || 'all'}
+                    onSelect={onLanguageChange}
+                    disabled={languagesLoading}
+                    placeholder={languagesLoading ? "Loading languages..." : "Select Language"}
                 />
             </div>
         </div>

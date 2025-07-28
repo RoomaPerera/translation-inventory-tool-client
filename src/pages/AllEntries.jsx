@@ -17,8 +17,8 @@ const AllEntries = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // Filter state now includes projectId, defaulting to "All"
-    const [filters, setFilters] = useState({ projectId: '' });
+    // Filter state now includes projectId and language, defaulting to "All"
+    const [filters, setFilters] = useState({ projectId: '', language: 'all' });
 
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [editingTranslation, setEditingTranslation] = useState(null);
@@ -44,6 +44,10 @@ const AllEntries = () => {
             if (filters.projectId) {
                 activeFilters.projectId = filters.projectId;
             }
+            // Only add the language to the filter if one is actually selected (not 'all')
+            if (filters.language && filters.language !== 'all') {
+                activeFilters.language = filters.language;
+            }
 
             const response = await translationService.getTranslations(page, 10, activeFilters);
             setTranslations(response.data.translations);
@@ -58,7 +62,7 @@ const AllEntries = () => {
         } finally {
             setLoading(false);
         }
-    }, [filters.projectId]); // Re-run when the project filter changes
+    }, [filters.projectId, filters.language]); // Re-run when the project or language filter changes
 
     useEffect(() => {
         fetchTranslations(currentPage);
@@ -114,11 +118,13 @@ const AllEntries = () => {
         <>
             <div className={`flex flex-col h-full p-5 transition-filter duration-300 ${isAnyModalOpen ? 'blur-sm' : ''}`}>
                 <AllEntriesHeader />
-                {/* --- FIXED: Pass project data down to the toolbar --- */}
+                {/* --- FIXED: Pass project and language data down to the toolbar --- */}
                 <AllEntriesToolbar
                     projects={projects}
                     currentProjectId={filters.projectId}
                     onProjectChange={(value) => handleFilterChange('projectId', value)}
+                    currentLanguage={filters.language}
+                    onLanguageChange={(value) => handleFilterChange('language', value)}
                 />
 
                 <div className="flex-grow overflow-y-auto bg-white rounded-lg shadow-sm">
@@ -129,9 +135,12 @@ const AllEntries = () => {
                     ) : (
                         <>
                             <TranslationTable
+                                user={user}
                                 translations={translations}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
+                                currentPage={paginationData.currentPage}
+                                itemsPerPage={10}
                             />
                             {paginationData.totalItems > 0 ? (
                                 <Pagination
