@@ -8,11 +8,50 @@ const fetchAnomalies = async (filters = {}) => {
     Object.entries(filters).filter(([_, v]) => v !== "")
   );
   const params = new URLSearchParams(filtered).toString();
-  const res = await fetch(`${API_BASE}/api/anomalies?${params}`, {
-    credentials: "include",
-  });
-  const json = await res.json();
-  return Array.isArray(json.anomalies) ? json.anomalies : [];
+  const url = `${API_BASE}/api/anomalies?${params}`;
+
+  console.log(`Fetching anomalies from: ${url}`);
+  console.log(`Filters:`, filters);
+
+  try {
+    const res = await fetch(url, {
+      credentials: "include",
+    });
+
+    console.log(`Response status: ${res.status}`);
+
+    if (!res.ok) {
+      console.error(`API Error: ${res.status} ${res.statusText}`);
+      const errorText = await res.text();
+      console.error(`Error body:`, errorText);
+      throw new Error(`API Error: ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+    console.log(`API Response:`, json);
+
+    // Backend returns: { success: true, anomalies: [...], pagination: {...} }
+    if (json.success && Array.isArray(json.anomalies)) {
+      console.log(
+        `Returning ${json.anomalies.length} anomalies (success format)`
+      );
+      return json.anomalies;
+    } else if (Array.isArray(json)) {
+      console.log(`Returning ${json.length} anomalies (direct array format)`);
+      return json;
+    } else if (Array.isArray(json.anomalies)) {
+      console.log(
+        `Returning ${json.anomalies.length} anomalies (anomalies property)`
+      );
+      return json.anomalies;
+    }
+
+    console.error("Unexpected API response format:", json);
+    return [];
+  } catch (error) {
+    console.error("Fetch error:", error);
+    throw error;
+  }
 };
 
 // Review an anomaly
@@ -183,6 +222,13 @@ function AnomalyCard({ anomaly, tab, onReview, onDelete }) {
 
 // Tabs: Handles tab navigation
 function Tabs({ tab, setTab, unreviewedCount, reviewedCount }) {
+  console.log(
+    "Tabs component - Unreviewed count:",
+    unreviewedCount,
+    "Reviewed count:",
+    reviewedCount
+  );
+
   return (
     <div style={styles.tabs}>
       <div style={styles.tabNav}>
@@ -260,25 +306,62 @@ export default function AdminAnomalyDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Debug user authentication
+  console.log("AdminAnomalyDashboard - User:", user);
+  console.log("AdminAnomalyDashboard - User role:", user?.role);
+
   // Load anomalies from backend
   const loadAnomalies = async () => {
     setLoading(true);
     setError(null);
     try {
+      console.log("Loading anomalies...");
       const [rev, unrev] = await Promise.all([
         fetchAnomalies({ reviewed: "true" }),
         fetchAnomalies({ reviewed: "false" }),
       ]);
-      setReviewed(Array.isArray(rev) ? rev : []);
-      setUnreviewed(Array.isArray(unrev) ? unrev : []);
+      console.log("Reviewed anomalies:", rev);
+      console.log("Unreviewed anomalies:", unrev);
+      console.log("Reviewed count:", Array.isArray(rev) ? rev.length : 0);
+      console.log("Unreviewed count:", Array.isArray(unrev) ? unrev.length : 0);
+
+      const reviewedArray = Array.isArray(rev) ? rev : [];
+      const unreviewedArray = Array.isArray(unrev) ? unrev : [];
+
+      console.log(
+        "Setting state - Reviewed:",
+        reviewedArray.length,
+        "Unreviewed:",
+        unreviewedArray.length
+      );
+      setReviewed(reviewedArray);
+      setUnreviewed(unreviewedArray);
+
+      console.log(
+        "State updated - Reviewed:",
+        reviewedArray.length,
+        "Unreviewed:",
+        unreviewedArray.length
+      );
     } catch (err) {
-      setError("Network error");
+      console.error("Error loading anomalies:", err);
+      setError(`Network error: ${err.message}`);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    if (!user || user.role !== "admin") return;
+    console.log("useEffect triggered - User:", user);
+    console.log(
+      "useEffect - User role check:",
+      user?.role,
+      "Expected: admin or Admin"
+    );
+    if (!user || (user.role !== "admin" && user.role !== "Admin")) {
+      console.log("useEffect - User not authorized, returning early");
+      return;
+    }
+    console.log("useEffect - User authorized, loading anomalies");
     loadAnomalies();
     // eslint-disable-next-line
   }, [user]);
@@ -286,9 +369,45 @@ export default function AdminAnomalyDashboard() {
   // Review handler
   const handleReview = async (id) => {
     try {
-      await reviewAnomaly(id);
-      await loadAnomalies();
-    } catch {
+      console.log(`Reviewing anomaly with ID: ${id}`);
+      console.log(
+        `Before review - Unreviewed: ${unreviewed.length}, Reviewed: ${reviewed.length}`
+      );
+
+      const result = await reviewAnomaly(id);
+      console.log(`Review result:`, result);
+
+      if (result.success) {
+        console.log(`Anomaly ${id} marked as reviewed successfully`);
+
+        // Immediately update the state instead of reloading
+        const anomalyToMove = unreviewed.find((a) => a._id === id);
+        if (anomalyToMove) {
+          console.log(`Moving anomaly from unreviewed to reviewed...`);
+
+          // Remove from unreviewed
+          const newUnreviewed = unreviewed.filter((a) => a._id !== id);
+          // Add to reviewed with updated reviewed status
+          const updatedAnomaly = { ...anomalyToMove, reviewed: true };
+          const newReviewed = [updatedAnomaly, ...reviewed];
+
+          console.log(
+            `Updating state - New unreviewed: ${newUnreviewed.length}, New reviewed: ${newReviewed.length}`
+          );
+          setUnreviewed(newUnreviewed);
+          setReviewed(newReviewed);
+
+          console.log(`State updated immediately`);
+        } else {
+          console.log(`Anomaly not found in unreviewed list, reloading...`);
+          await loadAnomalies();
+        }
+      } else {
+        console.log(`Failed to review anomaly:`, result.message);
+        setError("Failed to review anomaly");
+      }
+    } catch (error) {
+      console.error(`Error in handleReview:`, error);
       setError("Failed to review anomaly");
       await loadAnomalies();
     }
@@ -299,9 +418,43 @@ export default function AdminAnomalyDashboard() {
     if (!window.confirm("Are you sure you want to delete this anomaly?"))
       return;
     try {
-      await deleteAnomaly(id);
-      await loadAnomalies();
-    } catch {
+      console.log(`Deleting anomaly with ID: ${id}`);
+      console.log(
+        `Before delete - Unreviewed: ${unreviewed.length}, Reviewed: ${reviewed.length}`
+      );
+
+      const result = await deleteAnomaly(id);
+      console.log(`Delete result:`, result);
+
+      if (result.success) {
+        console.log(`Anomaly ${id} deleted successfully`);
+
+        // Immediately update the state instead of reloading
+        const isInUnreviewed = unreviewed.find((a) => a._id === id);
+        const isInReviewed = reviewed.find((a) => a._id === id);
+
+        if (isInUnreviewed) {
+          console.log(`Removing from unreviewed...`);
+          const newUnreviewed = unreviewed.filter((a) => a._id !== id);
+          setUnreviewed(newUnreviewed);
+          console.log(`Updated unreviewed count: ${newUnreviewed.length}`);
+        } else if (isInReviewed) {
+          console.log(`Removing from reviewed...`);
+          const newReviewed = reviewed.filter((a) => a._id !== id);
+          setReviewed(newReviewed);
+          console.log(`Updated reviewed count: ${newReviewed.length}`);
+        } else {
+          console.log(`Anomaly not found in either list, reloading...`);
+          await loadAnomalies();
+        }
+
+        console.log(`State updated immediately`);
+      } else {
+        console.log(`Failed to delete anomaly:`, result.message);
+        setError("Failed to delete anomaly");
+      }
+    } catch (error) {
+      console.error(`Error in handleDelete:`, error);
       setError("Failed to delete anomaly");
       await loadAnomalies();
     }
@@ -316,7 +469,7 @@ export default function AdminAnomalyDashboard() {
       </div>
     );
   }
-  if (user.role !== "admin") {
+  if (user.role !== "admin" && user.role !== "Admin") {
     return (
       <div style={styles.container}>
         <div style={{ ...styles.wrapper, textAlign: "center" }}>
@@ -333,7 +486,7 @@ export default function AdminAnomalyDashboard() {
         <div style={styles.header}>
           <h1 style={styles.title}>Anomaly & Alert Dashboard</h1>
           <p style={styles.subtitle}>
-            Manage and review security anomalies and alerts in your system.
+            Manage and review security anomalies and alerts.
           </p>
         </div>
         {/* Tabs */}
