@@ -1,4 +1,4 @@
-// AddProject.jsx - Updated to use the new bulk CSV import endpoint
+// AddProject.jsx - Updated to use the new CSV import methods
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -150,55 +150,120 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
     }
   };
 
-  // CSV handling
+  // Enhanced CSV handling with better validation
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) {
       setFormData(prev => ({
         ...prev,
-        csvFile: file,
+        csvFile: null,
         csvKeys: []
       }));
+      return;
+    }
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setError('Please select a valid CSV file.');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('CSV file is too large. Please select a file smaller than 5MB.');
       return;
     }
 
     Papa.parse(file, {
       header: false,
       skipEmptyLines: true,
+      dynamicTyping: false, // Keep as strings
       complete: (results) => {
-        const keys = results.data.flat().filter(key => key && key.trim() !== '');
-        setFormData(prev => ({
-          ...prev,
-          csvFile: file,
-          csvKeys: keys
-        }));
+        try {
+          // Extract all values from CSV and flatten
+          let keys = results.data.flat().filter(key => key && key.trim() !== '');
+          
+          // Remove duplicates and validate keys
+          keys = [...new Set(keys.map(key => key.trim()))];
+          
+          // Validate keys (basic validation)
+          const validKeys = keys.filter(key => {
+            // Check if key is not empty and contains valid characters
+            return key.length > 0 && key.length <= 100 && !/[<>\"'&]/.test(key);
+          });
+
+          if (validKeys.length === 0) {
+            setError('No valid translation keys found in the CSV file.');
+            return;
+          }
+
+          if (validKeys.length !== keys.length) {
+            const skipped = keys.length - validKeys.length;
+            console.warn(`Skipped ${skipped} invalid keys from CSV`);
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            csvFile: file,
+            csvKeys: validKeys
+          }));
+
+          // Clear any previous errors
+          if (error && error.includes('CSV')) {
+            setError(null);
+          }
+
+        } catch (parseError) {
+          console.error('Error processing CSV data:', parseError);
+          setError('Failed to process CSV file. Please check the file format.');
+        }
       },
-      error: (error) => {
-        console.error('CSV parsing error:', error);
-        setError('Failed to parse CSV file. Please check the file format.');
+      error: (parseError) => {
+        console.error('CSV parsing error:', parseError);
+        setError('Failed to parse CSV file. Please ensure it\'s a valid CSV format.');
       }
     });
   };
 
-  // NEW FUNCTION: Import translations from CSV using dedicated endpoint
+  // UPDATED: Enhanced CSV import function with better error handling
   const importTranslationsFromCSV = async (projectId) => {
-    if (formData.csvKeys.length === 0 || formData.languages.length === 0) {
+    if (!formData.csvKeys || formData.csvKeys.length === 0 || !formData.languages || formData.languages.length === 0) {
       return { created: 0, skipped: 0 };
     }
 
     try {
+      console.log(`Importing ${formData.csvKeys.length} keys for ${formData.languages.length} languages...`);
+      
+      // Use the primary CSV import method
       const result = await translationService.importTranslationsFromCSV(
         formData.csvKeys,
         projectId,
         formData.languages
       );
       
-      console.log(`CSV Import Result:`, result);
+      console.log('CSV Import Result:', result);
       return result.data || result;
     } catch (error) {
-      console.error('Error importing CSV translations:', error);
-      // Don't throw here - we still want the project creation to be considered successful
-      return { created: 0, skipped: 0, error: error.message };
+      console.error('Primary CSV import failed, trying alternative method:', error);
+      
+      // Fallback to alternative method if primary fails
+      try {
+        const fallbackResult = await translationService.createTranslationsFromCSVKeys(
+          formData.csvKeys,
+          projectId,
+          formData.languages
+        );
+        
+        console.log('Fallback CSV Import Result:', fallbackResult);
+        return fallbackResult;
+      } catch (fallbackError) {
+        console.error('Fallback CSV import also failed:', fallbackError);
+        return { 
+          created: 0, 
+          skipped: 0, 
+          error: `CSV import failed: ${fallbackError.message || 'Unknown error'}` 
+        };
+      }
     }
   };
 
@@ -209,8 +274,24 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
       return false;
     }
 
+    if (formData.name.trim().length < 2) {
+      setError('Project name must be at least 2 characters long');
+      return false;
+    }
+
+    if (formData.name.trim().length > 100) {
+      setError('Project name must not exceed 100 characters');
+      return false;
+    }
+
     if (formData.defaultLanguage && !formData.languages.includes(formData.defaultLanguage)) {
       setError('Default language must be one of the assigned languages');
+      return false;
+    }
+
+    // Validate CSV keys if provided
+    if (formData.csvKeys.length > 0 && formData.languages.length === 0) {
+      setError('Please assign at least one language before importing CSV keys');
       return false;
     }
 
@@ -223,7 +304,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
     return true;
   };
 
-  // Form submission - UPDATED to use new CSV import endpoint
+  // UPDATED: Enhanced form submission with better error handling and progress tracking
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -241,52 +322,74 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
         description: formData.description.trim(),
         languages: formData.languages,
         createdBy: userId,
-        csvKeys: formData.csvKeys,
         ...(formData.defaultLanguage && { defaultLanguage: formData.defaultLanguage })
       };
       
+      console.log('Creating project with data:', projectData);
       const result = await projectService.addProject(projectData);
+      console.log('Project created successfully:', result);
       
-      // NEW: Import translations from CSV using dedicated endpoint
+      // UPDATED: Enhanced CSV import with better status reporting
       let csvImportResult = null;
-      if (result && result._id) {
+      if (result && result._id && formData.csvKeys.length > 0) {
+        console.log('Starting CSV import...');
         csvImportResult = await importTranslationsFromCSV(result._id);
+        console.log('CSV import completed:', csvImportResult);
       }
       
+      // Build success message
       let successMessage = 'Project created successfully!';
+      
+      // Handle email notification status
       if (result.notificationStatus === 'email_failed') {
         successMessage = 'Project created successfully! (Note: Email notifications could not be sent)';
       }
       
+      // Add default language info
       if (formData.defaultLanguage) {
         const defaultLangName = availableLanguages.find(lang => lang.code === formData.defaultLanguage)?.name;
         successMessage += ` Default language set to ${defaultLangName || formData.defaultLanguage}.`;
       }
       
-      // NEW: Enhanced CSV import success message
+      // UPDATED: Enhanced CSV import success message with detailed stats
       if (csvImportResult && formData.csvKeys.length > 0) {
+        const expectedTotal = formData.csvKeys.length * formData.languages.length;
+        
         if (csvImportResult.error) {
           successMessage += ` Warning: CSV import encountered an error - ${csvImportResult.error}`;
         } else if (csvImportResult.created > 0) {
-          successMessage += ` Successfully imported ${csvImportResult.created} translation entries from CSV.`;
+          successMessage += ` Successfully imported ${csvImportResult.created} translation entries from CSV`;
+          
+          if (csvImportResult.created === expectedTotal) {
+            successMessage += ` (${formData.csvKeys.length} keys × ${formData.languages.length} languages).`;
+          } else {
+            successMessage += ` out of ${expectedTotal} expected entries.`;
+          }
+          
           if (csvImportResult.skipped > 0) {
-            successMessage += ` (${csvImportResult.skipped} entries were skipped as duplicates)`;
+            successMessage += ` ${csvImportResult.skipped} entries were skipped as duplicates.`;
           }
         } else if (csvImportResult.skipped > 0) {
           successMessage += ` All ${csvImportResult.skipped} translation entries from CSV already existed.`;
+        } else {
+          successMessage += ` Note: No translation entries were created from the CSV file.`;
         }
       }
       
       setSuccess(successMessage);
       resetForm();
       
+      // Navigate or trigger success callback after delay
       setTimeout(() => {
-        if (onSuccess) onSuccess();
+        if (onSuccess) {
+          onSuccess(result); // Pass the created project data
+        }
       }, 2000);
       
+      // Clear success message after longer delay
       setTimeout(() => {
         setSuccess(null);
-      }, 5000);
+      }, 8000); // Increased timeout for longer messages
       
     } catch (err) {
       console.error('Error creating project:', err);
@@ -296,6 +399,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
     }
   };
 
+  // Enhanced error handling
   const handleSubmitError = (err) => {
     let errorMessage = 'Failed to create project';
     
@@ -324,15 +428,19 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
       errorMessage = err.message;
     }
     
-    // Enhanced error messages
-    if (errorMessage.includes('fetch')) {
-      errorMessage += '. Please check if the server is running.';
+    // Enhanced error messages with actionable advice
+    if (errorMessage.includes('fetch') || errorMessage.includes('Network')) {
+      errorMessage += '. Please check your internet connection and try again.';
     } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
       errorMessage = 'You are not authorized to create projects. Please log in again.';
     } else if (errorMessage.includes('400')) {
-      errorMessage = 'Invalid project data. Please check all required fields.';
+      errorMessage = 'Invalid project data. Please check all required fields and try again.';
     } else if (errorMessage.includes('409') || errorMessage.includes('already exists')) {
       errorMessage = 'A project with this name already exists. Please choose a different name.';
+    } else if (errorMessage.includes('413')) {
+      errorMessage = 'The project data is too large. Please reduce the CSV file size or number of languages.';
+    } else if (errorMessage.includes('500')) {
+      errorMessage = 'Server error occurred. Please try again in a few moments.';
     }
     
     setError(errorMessage);
@@ -340,42 +448,42 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
 
   return (
     <div className="w-full max-w-xl mx-auto">
-      {/* Status Messages - Compact */}
+      {/* Status Messages - Enhanced with better styling */}
       {error && (
-        <div className="mb-3 p-2 bg-red-50 text-red-700 rounded text-sm border-l-4 border-red-300">
-          <div className="flex items-center">
-            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mb-3 p-3 bg-red-50 text-red-700 rounded-md text-sm border-l-4 border-red-400">
+          <div className="flex items-start">
+            <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            {error}
+            <div>{error}</div>
           </div>
         </div>
       )}
       
       {success && (
-        <div className="mb-3 p-2 bg-green-50 text-green-700 rounded text-sm border-l-4 border-green-300">
-          <div className="flex items-center">
-            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mb-3 p-3 bg-green-50 text-green-700 rounded-md text-sm border-l-4 border-green-400">
+          <div className="flex items-start">
+            <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            {success}
+            <div>{success}</div>
           </div>
         </div>
       )}
       
       {languageSuccess && (
-        <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded text-sm border-l-4 border-blue-300">
-          <div className="flex items-center">
-            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mb-3 p-3 bg-blue-50 text-blue-700 rounded-md text-sm border-l-4 border-blue-400">
+          <div className="flex items-start">
+            <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            {languageSuccess}
+            <div>{languageSuccess}</div>
           </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Project Name - Compact */}
+        {/* Project Name - Enhanced */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="name">
             Project Name*
@@ -387,12 +495,16 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
             value={formData.name}
             onChange={handleChange}
             required
-            placeholder="Enter project name"
+            maxLength={100}
+            placeholder="Enter project name (2-100 characters)"
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
+          <div className="text-xs text-gray-500 mt-1">
+            {formData.name.length}/100 characters
+          </div>
         </div>
         
-        {/* Description - Compact */}
+        {/* Description - Enhanced */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="description">
             Description
@@ -403,12 +515,16 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
             value={formData.description}
             onChange={handleChange}
             rows="2"
-            placeholder="Enter project description (optional)"
+            maxLength={500}
+            placeholder="Enter project description (optional, max 500 characters)"
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
+          <div className="text-xs text-gray-500 mt-1">
+            {formData.description.length}/500 characters
+          </div>
         </div>
         
-        {/* Language Assignment - Compact */}
+        {/* Language Assignment - Same as before */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Languages
@@ -430,7 +546,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
             )}
           </div>
           
-          {/* Selected Languages Display - Compact */}
+          {/* Selected Languages Display */}
           {formData.languages.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
               {formData.languages.map((lang, index) => (
@@ -466,7 +582,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
           )}
         </div>
 
-        {/* Default Language Selection - Compact */}
+        {/* Default Language Selection */}
         {formData.languages.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="defaultLanguage">
@@ -489,7 +605,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
           </div>
         )}
         
-        {/* CSV File Upload - Compact */}
+        {/* ENHANCED: CSV File Upload with better validation and preview */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="csvFile">
             Import CSV Keys (Optional)
@@ -499,63 +615,93 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
             id="csvFile"
             accept=".csv"
             onChange={handleCSVUpload}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
           />
+          <div className="text-xs text-gray-500 mt-1">
+            Upload a CSV file containing translation keys. Max file size: 5MB
+          </div>
           
-          {/* Enhanced CSV Preview */}
+          {/* Enhanced CSV Preview with detailed information */}
           {formData.csvKeys.length > 0 && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs border">
-              <div className="text-green-600 mb-1">
-                ✓ {formData.csvKeys.length} keys loaded from CSV
+            <div className="mt-2 p-3 bg-gray-50 rounded-md text-xs border">
+              <div className="flex items-center text-green-600 mb-2">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <strong>{formData.csvKeys.length} keys loaded from CSV</strong>
               </div>
-              <div className="text-gray-600 truncate mb-1">
-                Preview: {formData.csvKeys.slice(0, 3).join(', ')}
-                {formData.csvKeys.length > 3 && ` ... +${formData.csvKeys.length - 3} more`}
+              
+              <div className="text-gray-600 mb-2">
+                <strong>File:</strong> {formData.csvFile?.name}
               </div>
+              
+              <div className="text-gray-600 mb-2">
+                <strong>Preview:</strong> {formData.csvKeys.slice(0, 5).join(', ')}
+                {formData.csvKeys.length > 5 && ` ... +${formData.csvKeys.length - 5} more`}
+              </div>
+              
               {formData.languages.length > 0 ? (
-                <div className="text-blue-600">
-                  📊 Will create {formData.csvKeys.length * formData.languages.length} translation entries 
-                  <span className="text-gray-500">
+                <div className="p-2 bg-blue-50 rounded text-blue-700 border border-blue-200">
+                  <div className="flex items-center mb-1">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <strong>Ready to import!</strong>
+                  </div>
+                  <div>
+                    Will create <strong>{formData.csvKeys.length * formData.languages.length}</strong> translation entries
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
                     ({formData.csvKeys.length} keys × {formData.languages.length} languages)
-                  </span>
+                  </div>
                 </div>
               ) : (
-                <div className="text-orange-600">
-                  ⚠️ Assign languages first to create translation entries
+                <div className="p-2 bg-orange-50 rounded text-orange-700 border border-orange-200">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Assign languages first to create translation entries</strong>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Submit Buttons - Compact */}
-        <div className="flex justify-end space-x-2 pt-2">
+        {/* Submit Buttons - Enhanced */}
+        <div className="flex justify-end space-x-2 pt-4">
           <button
             type="button"
             onClick={() => onSuccess && onSuccess()}
             disabled={isSubmitting}
-            className="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting || !formData.name.trim()}
-            className="px-3 py-1.5 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors flex items-center"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent mr-1 inline-block"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                 Creating...
               </>
             ) : (
-              'Create Project'
+              <>
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Create Project
+              </>
             )}
           </button>
         </div>
       </form>
 
-      {/* Language Assignment Modal */}
+      {/* Language Assignment Modal - Same as before */}
       <Modal
         isOpen={isLanguageModalOpen}
         onClose={() => setIsLanguageModalOpen(false)}
