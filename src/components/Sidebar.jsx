@@ -1,4 +1,5 @@
 import React from "react";
+import { FaChartLine } from 'react-icons/fa';
 import { Link, useNavigate } from "react-router-dom";
 import { FaHome, FaList, FaClock, FaCog, FaSignOutAlt } from "react-icons/fa";
 import gtnLogo from "../assets/images/gtn-logo.png";
@@ -37,6 +38,8 @@ const Sidebar = () => {
         return true; // Home is visible to all roles
       case 'all-entries':
         return role === 'admin' || role === 'developer'; // Hidden for translators
+         case 'analytics':
+        return role === 'admin' || role === 'developer'; /
       case 'activity-log':
         return role === 'admin' || role === 'translator'; // Hidden for developers
       case 'settings':
@@ -75,6 +78,14 @@ const Sidebar = () => {
               </Link>
             </li>
           )}
+        {shouldShowNavItem('analytics') && (
+            <li className="mb-4">
+                        <Link to="/analytics" className="flex items-center gap-4 py-3 px-5 rounded-lg text-base transition-colors hover:bg-brand-hover-light">
+                            <FaChartLine /> Analytics
+                        </Link>
+                    </li>
+          )}
+
           {shouldShowNavItem('activity-log') && (
             <li className="mb-4">
               <Link

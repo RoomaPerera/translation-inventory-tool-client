@@ -11,7 +11,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 
 // Public pages
 import Login from "./pages/login";
-import Register from "./pages/Register";
+import Register from "./pages/Register.jsx";
 
 // Protected pages
 import Home from "./pages/Home";
@@ -20,6 +20,11 @@ import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
 import { ActivityLogProvider } from "./context/ActivityLogContext";
 import AdminAnomalyDashboard from "./pages/AdminAnomalyDashboard.jsx";
+import LanguageForm from './components/ProjectLanguageComponents/LanguageForm';
+import ProjectAndLanguageSettings from './pages/ProjectAndLanguageSettings';
+import EditProjectForm from './components/ProjectLanguageComponents/EditProjectForm';
+import ProjectDetails from './pages/ProjectDetails';
+import Analytics from './pages/Analytics';
 
 function PrivateRoute({ children }) {
   const { user } = useAuthContext();
@@ -69,6 +74,9 @@ function App() {
 
           <Route path="/settings" element={<Settings />} />
           {/* Redirect unmatched routes to home */}
+          <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
+          <Route path="/project-details" element={<ProjectDetails />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

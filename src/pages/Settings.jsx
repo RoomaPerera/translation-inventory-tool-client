@@ -1,195 +1,127 @@
-import React, { useState, useEffect } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
-import userService from "../services/userService";
-import { Pagination } from "../components/reusableComponents/Pagination";
-//import ConfirmModal from '../components/UserListComponents/ConfirmModal';
-//import LanguageModal from '../components/UserListComponents/LanguageModal';
-//import Button from '../components/reusableComponents/Button';
+import React, { useState } from 'react';
+import { useAuthContext } from '../hooks/useAuthContext';
+import ProjectAndLanguageSettings from './ProjectAndLanguageSettings'; // Import your existing component
 
-// New User Management Component
-const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [langTarget, setLangTarget] = useState(null);
-  const pageSize = 10;
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await userService.getAllUsers();
-      setUsers(res.data);
-    } catch (err) {
-      setError("Failed to fetch users.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await userService.deleteUser(deleteTarget._id);
-      setDeleteTarget(null);
-      fetchUsers(); // Refresh list
-    } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete user");
-    }
-  };
-
-  const saveLanguages = async (langs) => {
-    if (!langTarget) return;
-    try {
-      await userService.assignLanguagesToUser(langTarget._id, langs);
-      alert("Languages updated");
-      setLangTarget(null);
-      fetchUsers(); // Refresh list
-    } catch (err) {
-      alert(err.response?.data?.error || "Failed to update languages");
-    }
-  };
-
-  const paginatedUsers = users.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  return (
-    <div className="mt-8">
-      <h3 className="text-lg font-medium text-gray-800 mb-4">
-        User Management
-      </h3>
-      {loading && <p>Loading users...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {!loading && !error && (
-        <>
-          <div className="overflow-x-auto bg-white rounded-lg shadow-sm border">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-4 text-left text-sm font-semibold text-gray-600">
-                    Username
-                  </th>
-                  <th className="p-4 text-left text-sm font-semibold text-gray-600">
-                    Email
-                  </th>
-                  <th className="p-4 text-left text-sm font-semibold text-gray-600">
-                    Role
-                  </th>
-                  <th className="p-4 text-left text-sm font-semibold text-gray-600">
-                    Status
-                  </th>
-                  <th className="p-4 text-left text-sm font-semibold text-gray-600">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedUsers.map((u) => (
-                  <tr key={u._id}>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-700">
-                      {u.userName}
-                    </td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">
-                      {u.email}
-                    </td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">
-                      {u.role}
-                    </td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">
-                      {u.roleStatus}
-                    </td>
-                    <td className="p-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {u.role === "Translator" && (
-                        <Button
-                          onClick={() => setLangTarget(u)}
-                          className="!py-1 !px-2 !text-xs !bg-blue-100 !text-blue-700 hover:!bg-blue-200"
-                        >
-                          Languages
-                        </Button>
-                      )}
-                      <Button
-                        onClick={() => setDeleteTarget(u)}
-                        className="!py-1 !px-2 !text-xs !bg-red-100 !text-red-700 hover:!bg-red-200"
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalItems={users.length}
-            itemsPerPage={pageSize}
-            onPageChange={setCurrentPage}
-          />
-        </>
-      )}
-      <ConfirmModal
-        open={!!deleteTarget}
-        title={`Delete ${deleteTarget?.userName}?`}
-        message="This will mark the user as deleted. This action cannot be undone."
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
-      <LanguageModal
-        open={!!langTarget}
-        userName={langTarget?.userName}
-        initial={langTarget?.languages || []}
-        onSave={saveLanguages}
-        onCancel={() => setLangTarget(null)}
-      />
-    </div>
-  );
-};
-
-// Main Settings Page
 const Settings = () => {
-  const { user } = useAuthContext();
-  return (
-    <main className="flex-grow p-5 bg-brand-bg-main">
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Settings</h2>
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-800">User Profile</h3>
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-600">
-              Username
-            </label>
-            <input
-              type="text"
-              value={user?.userName || ""}
-              readOnly
-              className="mt-1 p-2 w-full max-w-sm bg-gray-100 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-600">
-              Role
-            </label>
-            <input
-              type="text"
-              value={user?.role || ""}
-              readOnly
-              className="mt-1 p-2 w-full max-w-sm bg-gray-100 border border-gray-300 rounded-md capitalize"
-            />
-          </div>
-        </div>
-        {/* Conditionally render UserManagement for Admins */}
-        {user?.role === "Admin" && <UserManagement />}
-      </div>
-    </main>
-  );
+    const { user } = useAuthContext();
+    const [activeTab, setActiveTab] = useState('profile'); // Start with profile tab
+
+    return (
+        <main className="flex-grow p-5 bg-brand-bg-main min-h-screen">
+            <div className="max-w-full">
+                <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
+                
+                {/* Tab Navigation */}
+                {/* <Link to="/settings/projects" className="settings-link">
+                    Project & Language Settings
+                </Link> */}
+                <div className="flex mb-6 border-b border-gray-200">
+                    <button
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
+                            activeTab === 'profile'
+                                ? 'text-indigo-700 border-indigo-700 bg-white'
+                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                        }`}
+                        onClick={() => setActiveTab('profile')}
+                    >
+                        User Profile
+                    </button>
+                    <button
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
+                            activeTab === 'management'
+                                ? 'text-indigo-700 border-indigo-700 bg-white'
+                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                        }`}
+                        onClick={() => setActiveTab('management')}
+                    >
+                        Project & Language Management
+                    </button>
+                </div>
+
+                {/* User Profile Section */}
+                {activeTab === 'profile' && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h2 className="text-xl font-semibold mb-4">User Profile</h2>
+                        <div className="space-y-4">
+                            <p className="text-gray-600">
+                                View and manage your account information and preferences.
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Username</label>
+                                    <input 
+                                        type="text" 
+                                        value={user?.userName || ''} 
+                                        readOnly 
+                                        className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Role</label>
+                                    <input 
+                                        type="text" 
+                                        value={user?.role || ''} 
+                                        readOnly 
+                                        className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 capitalize focus:outline-none"
+                                    />
+                                </div>
+                                
+                                {user?.email && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
+                                        <input 
+                                            type="email" 
+                                            value={user.email} 
+                                            readOnly 
+                                            className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
+                                        />
+                                    </div>
+                                )}
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">Account Status</label>
+                                    <div className="flex items-center">
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                            user?.isActive === true 
+                                                ? 'bg-green-100 text-green-800' 
+                                                : 'bg-red-100 text-red-800'
+                                        }`}>
+                                            <span className={`w-2 h-2 rounded-full mr-2 ${
+                                                user?.isActive === true ? 'bg-green-400' : 'bg-red-400'
+                                            }`}></span>
+                                            {user?.isActive === true ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="border-t pt-6 mt-6">
+                                <h3 className="text-lg font-medium text-gray-800 mb-4">Account Actions</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                                        Change Password
+                                    </button>
+                                    <button className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                                        Update Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Project & Language Management Section */}
+                {activeTab === 'management' && (
+                    <div>
+                        {/* Import and render the ProjectAndLanguageSettings component */}
+                        <ProjectAndLanguageSettings />
+                    </div>
+                )}
+            </div>
+        </main>
+    );
 };
 
 export default Settings;
