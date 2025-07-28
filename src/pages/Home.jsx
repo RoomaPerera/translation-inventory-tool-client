@@ -179,6 +179,8 @@ const Home = () => {
                 onClose={() => setEditModalOpen(false)}
                 onSave={fetchTranslations}
                 translation={editingTranslation}
+                projects={projects}
+                currentUser={user}
             />
             <AssignProjectLanguageModal
                 isOpen={isLangModalOpen}

@@ -163,6 +163,7 @@ const AllEntries = () => {
                 onSave={() => fetchTranslations(currentPage)}
                 translation={editingTranslation}
                 currentUser={user}
+                projects={projects}
             />
         </>
     );
