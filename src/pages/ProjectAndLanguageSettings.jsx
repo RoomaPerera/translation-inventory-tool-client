@@ -62,8 +62,8 @@ const ProjectAndLanguageSettings = () => {
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
-      const projectsData = await projectService.getProjects();
-      setProjects(projectsData);
+      const response = await projectService.getProjects();
+      setProjects(response.data);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       showNotification('Failed to fetch projects: ' + (error.message || 'Unknown error'), 'error');
@@ -76,7 +76,7 @@ const ProjectAndLanguageSettings = () => {
   const [notifications, setNotifications] = useState([]);
   
   const showNotification = (message, type = 'info') => {
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     const notification = { id, message, type };
     setNotifications(prev => [...prev, notification]);
     setTimeout(() => {

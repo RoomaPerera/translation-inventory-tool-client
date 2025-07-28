@@ -10,6 +10,7 @@ import AssignProjectLanguageModal from "../components/AssignProjectLanguageModal
 import { Pagination } from "../components/reusableComponents/Pagination";
 import useDebounce from "../hooks/useDebounce";
 import translationService from "../services/translationService";
+import projectService from "../services/projectService";
 import API from "../services/axiosInstance";
 import ConfirmModal from "../components/UserListComponents/ConfirmModal"; // <-- 1. Import the ConfirmModal
 
@@ -45,7 +46,7 @@ const Home = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await API.get("/projects");
+        const response = await projectService.getProjects();
         setProjects(response.data);
         if (response.data.length > 0) {
           setFilters((prev) => ({ ...prev, projectId: response.data[0]._id }));

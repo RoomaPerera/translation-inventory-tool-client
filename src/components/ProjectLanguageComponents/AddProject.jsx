@@ -414,8 +414,8 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select default language (optional)</option>
-              {getAssignedLanguageObjects().map((lang) => (
-                <option key={lang._id} value={lang.code}>
+              {getAssignedLanguageObjects().map((lang, index) => (
+                <option key={`${lang._id}-${index}`} value={lang.code}>
                   {lang.name} ({lang.code})
                 </option>
               ))}
@@ -480,7 +480,7 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
                   
                   return (
                     <div
-                      key={lang._id}
+                      key={`${lang._id}-${index}`}
                       className={`flex items-center py-3 px-2 rounded transition-colors hover:bg-gray-50 cursor-pointer ${
                         index < availableLanguages.filter(l => !formData.languages.includes(l.code)).length - 1 ? 'border-b border-gray-100' : ''
                       }`}
