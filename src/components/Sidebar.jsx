@@ -39,7 +39,7 @@ const Sidebar = () => {
       case 'all-entries':
         return role === 'admin' || role === 'developer'; // Hidden for translators
          case 'analytics':
-        return role === 'admin' || role === 'developer'; /
+        return role === 'admin' || role === 'developer'; 
       case 'activity-log':
         return role === 'admin' || role === 'translator'; // Hidden for developers
       case 'settings':

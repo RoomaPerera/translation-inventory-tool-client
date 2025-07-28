@@ -46,8 +46,8 @@ const ProjectDetails = () => {
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
-      const projectsData = await projectService.getProjects();
-      setProjects(projectsData);
+      const response = await projectService.getAllProjects();
+      setProjects(response.data);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       showNotification('Failed to fetch projects: ' + (error.message || 'Unknown error'), 'error');
