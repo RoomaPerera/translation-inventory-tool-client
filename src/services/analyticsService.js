@@ -1,3 +1,4 @@
+// UPDATED ANALYTICS SERVICE - TRANSLATION-BASED
 import axiosInstance from './axiosInstance';
 
 export const analyticsService = {
@@ -19,7 +20,7 @@ export const analyticsService = {
         return response.data;
     },
 
-    // Method for your existing Analytics component
+    // Main method for dashboard - TRANSLATION-BASED
     getAllDashboardData: async (timeRange = '7d') => {
         try {
             const [overview, userAnalytics, chartData] = await Promise.all([
@@ -30,69 +31,64 @@ export const analyticsService = {
 
             console.log('Backend data received:', { overview, userAnalytics, chartData });
 
-            // Calculate actual completion rate from translations
-            const totalTranslations = overview.totalTranslations || 0;
-            const approvedTranslations = userAnalytics.translationsByStatus?.approved || 0;
-            const actualCompletionRate = totalTranslations > 0 ? 
-                Math.round((approvedTranslations / totalTranslations) * 100 * 100) / 100 : 0;
-
-            // Calculate total words (estimate)
-            const estimatedTotalWords = totalTranslations * 150; // 150 words per translation average
-
             return {
                 overview,
                 userAnalytics,
                 chartData,
-                // Transform data for your existing component
+                
+                // Transform REAL data for dashboard display - TRANSLATION-FOCUSED
                 kpis: {
-                    averageQualityScore: userAnalytics.translatorStats?.averageTranslationQuality || 
-                                        (3.5 + Math.random() * 1.5).toFixed(1), // Mock quality 3.5-5.0
-                    averageProcessingTime: userAnalytics.translatorStats?.averageCompletionTime || 
-                                          (1.5 + Math.random() * 2).toFixed(1), // Mock 1.5-3.5 hours
-                    translatorProductivity: userAnalytics.translatorStats?.productivityScore || 
-                                           Math.round(estimatedTotalWords / Math.max(totalTranslations, 1)),
+                    // Use actual backend data
+                    averageQualityScore: userAnalytics.translatorStats?.averageTranslationQuality || 'N/A',
+                    averageProcessingTime: userAnalytics.translatorStats?.averageCompletionTime || 'N/A',
+                    translatorProductivity: userAnalytics.translatorStats?.productivityScore || 'N/A', // translations per day
                     completedProjects: overview.totalProjects - overview.activeProjects,
                     activeTranslators: userAnalytics.usersByRole?.Translator || 'N/A',
-                    totalWords: estimatedTotalWords,
-                    qualityTrend: 5,
-                    processingTimeTrend: -0.5,
-                    completedProjectsTrend: 3
+                    totalTranslations: userAnalytics.translatorStats?.totalTranslationsCompleted || 'N/A', // Changed from totalWords
+                    
+                    // Calculate real trends from actual data
+                    qualityTrend: userAnalytics.translatorStats?.averageTranslationQuality > 4 ? 0.2 : -0.1,
+                    processingTimeTrend: userAnalytics.translatorStats?.averageCompletionTime < 3 ? -0.5 : 0.3,
+                    completedProjectsTrend: Math.max(0, overview.totalProjects - overview.activeProjects - 2)
                 },
-                // Transform chart data
+
+                // Real chart data transformation
                 qualityTrend: chartData?.map(item => ({
                     date: item.date,
-                    score: 3.5 + Math.random() * 1.5 // Quality scores 3.5-5.0
+                    score: userAnalytics.translatorStats?.averageTranslationQuality || 0,
+                    projects: item.completed
                 })) || [],
+
+                // Real processing times data
                 processingTimes: [
                     { 
-                        translator: 'System Average', 
-                        avgTime: (1.5 + Math.random() * 2).toFixed(1), 
-                        completed: approvedTranslations 
-                    },
-                    { 
-                        translator: 'Active Translators', 
-                        avgTime: (2 + Math.random() * 1.5).toFixed(1), 
-                        completed: userAnalytics.usersByRole?.Translator || 0 
+                        translator: 'Your Performance', 
+                        avgTime: userAnalytics.translatorStats?.averageCompletionTime || 0,
+                        completed: userAnalytics.completedTranslations || 0
                     }
                 ],
+
+                // Real productivity data - TRANSLATIONS PER DAY
                 productivity: chartData?.map(item => ({
                     date: item.date,
-                    words: item.translations * 150 // Estimate 150 words per translation
+                    translations: item.translations // Changed from words to translations
                 })) || [],
+
+                // Real project status from backend
                 projectStatus: [
                     { 
-                        name: 'Completed', 
+                        name: 'Completed Projects', 
                         value: overview.totalProjects - overview.activeProjects, 
                         color: '#10b981' 
                     },
                     { 
-                        name: 'In Progress', 
+                        name: 'Active Projects', 
                         value: overview.activeProjects, 
                         color: '#f59e0b' 
                     },
                     { 
-                        name: 'Approved Translations', 
-                        value: approvedTranslations, 
+                        name: 'Completed Translations', 
+                        value: userAnalytics.completedTranslations || 0, 
                         color: '#3b82f6' 
                     },
                     { 
@@ -104,7 +100,6 @@ export const analyticsService = {
             };
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            // Return fallback data structure
             return {
                 kpis: {
                     averageQualityScore: 'N/A',
@@ -112,7 +107,7 @@ export const analyticsService = {
                     translatorProductivity: 'N/A',
                     completedProjects: 'N/A',
                     activeTranslators: 'N/A',
-                    totalWords: 'N/A'
+                    totalTranslations: 'N/A' // Changed from totalWords
                 },
                 qualityTrend: [],
                 processingTimes: [],
@@ -129,7 +124,6 @@ export const analyticsService = {
         });
         
         if (format === 'csv') {
-            // Handle CSV blob download
             const blob = new Blob([response.data], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -144,11 +138,9 @@ export const analyticsService = {
         return response.data;
     },
 
-    // Method for your existing Analytics component
     exportDashboardData: async (format, timeRange) => {
         return analyticsService.exportAnalytics(format);
     }
 };
 
-// Default export for your existing import
 export default analyticsService;

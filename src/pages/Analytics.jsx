@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Download, RefreshCw, TrendingUp, TrendingDown, Clock, Users, FileText, Star, AlertCircle } from 'lucide-react';
+import { Download, RefreshCw, TrendingUp, TrendingDown, Clock, Users, FileText, AlertCircle } from 'lucide-react';
 import analyticsService from '../services/analyticsService';
-import axiosInstance from '../services/axiosInstance';
 
 const Analytics = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -114,22 +113,6 @@ const Analytics = () => {
 
   const { kpis, qualityTrend, processingTimes, productivity, projectStatus } = dashboardData;
 
-const populateData = async () => {
-    try {
-        setLoading(true);
-        const response = await axiosInstance.post('/analytics/populate');
-        console.log('Data populated:', response.data);
-        // Refresh the dashboard after population
-        await fetchDashboardData(selectedTimeRange);
-        alert('Analytics data populated successfully!');
-    } catch (error) {
-        console.error('Failed to populate data:', error);
-        alert('Failed to populate data. Check console for details.');
-    } finally {
-        setLoading(false);
-    }
-};
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -158,14 +141,6 @@ const populateData = async () => {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-              <button
-                onClick={populateData}
-                disabled={loading}
-                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Populate Data
               </button>
               <div className="relative group">
                 <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
@@ -239,7 +214,9 @@ const populateData = async () => {
                   </div>
                 )}
               </div>
-              <Star className="w-8 h-8 text-yellow-500" />
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <span className="text-yellow-600 text-lg">⭐</span>
+              </div>
             </div>
           </div>
 
@@ -308,7 +285,7 @@ const populateData = async () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Words</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {kpis?.totalWords ? `${(kpis.totalWords / 1000).toFixed(0)}K` : 'N/A'}
+                  {kpis?.totalWords && kpis.totalWords !== 'N/A' ? `${(kpis.totalWords / 1000).toFixed(0)}K` : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">this period</p>
               </div>
@@ -346,7 +323,7 @@ const populateData = async () => {
                 <BarChart data={processingTimes} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis dataKey="translator" type="category" width={80} />
+                  <YAxis dataKey="translator" type="category" width={120} />
                   <Tooltip formatter={(value) => [`${value}h`, 'Avg Processing Time']} />
                   <Bar dataKey="avgTime" fill="#10b981" />
                 </BarChart>
