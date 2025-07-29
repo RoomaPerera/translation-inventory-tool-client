@@ -7,7 +7,6 @@ import languageService from '../services/languageService';
 // Import reusable components
 import TabNavigation from '../components/reusableComponents/TabNavigation';
 import LanguageManagement from '../components/ProjectLanguageComponents/LanguageManagement';
-import QuickActions from '../components/ProjectLanguageComponents/QuickActions';
 import Modal from '../components/reusableComponents/Modal';
 
 // Import forms
@@ -614,9 +613,9 @@ const ProjectAndLanguageSettings = () => {
               <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-indigo-200/50">
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                   <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse flex-shrink-0"></div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-indigo-800">Language Management</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold text-black-800">Language Management</h2>
                 </div>
-                <p className="text-indigo-600/80 text-sm">
+                <p className="text-black-600/80 text-sm">
                   Add and configure supported languages for your projects
                 </p>
               </div>
@@ -629,26 +628,6 @@ const ProjectAndLanguageSettings = () => {
                   onEditLanguage={handleEditLanguage}  
                   onDeleteLanguage={handleDeleteLanguage}
                 />
-              </div>
-            </div>
-          )}
-          
-          {activeTab === 'quick-actions' && (
-            <div className="animate-fade-in">
-              <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/50">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-                  <div className="w-2 h-2 bg-gradient-to-r from-slate-500 to-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-blue-700">
-                    Quick Actions
-                  </h2>
-                </div>
-                <p className="text-slate-600/80 text-sm">
-                  Fast access to common tasks and workflows
-                </p>
-              </div>
-              
-              <div className="space-y-4 sm:space-y-6">
-                <QuickActions setActiveTab={handleTabChange} />
               </div>
             </div>
           )}

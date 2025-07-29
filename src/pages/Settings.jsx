@@ -6,15 +6,15 @@ const Settings = () => {
     const { user } = useAuthContext();
     const [activeTab, setActiveTab] = useState('profile'); // Start with profile tab
 
+    // Check if user has permission for Project & Language Management
+    const hasManagementAccess = user && (user.role === 'Admin');
+
     return (
         <main className="flex-grow p-5 bg-brand-bg-main min-h-screen">
             <div className="max-w-full">
-                <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
                 
                 {/* Tab Navigation */}
-                {/* <Link to="/settings/projects" className="settings-link">
-                    Project & Language Settings
-                </Link> */}
                 <div className="flex mb-6 border-b border-gray-200">
                     <button
                         className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
@@ -26,16 +26,20 @@ const Settings = () => {
                     >
                         User Profile
                     </button>
-                    <button
-                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
-                            activeTab === 'management'
-                                ? 'text-indigo-700 border-indigo-700 bg-white'
-                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
-                        }`}
-                        onClick={() => setActiveTab('management')}
-                    >
-                        Project & Language Management
-                    </button>
+                    
+                    {/* Only show Project & Language Management tab if user has access */}
+                    {hasManagementAccess && (
+                        <button
+                            className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
+                                activeTab === 'management'
+                                    ? 'text-indigo-700 border-indigo-700 bg-white'
+                                    : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
+                            onClick={() => setActiveTab('management')}
+                        >
+                            Project & Language Management
+                        </button>
+                    )}
                 </div>
 
                 {/* User Profile Section */}
@@ -112,11 +116,28 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Project & Language Management Section */}
-                {activeTab === 'management' && (
+                {/* Project & Language Management Section - Role-based access */}
+                {activeTab === 'management' && hasManagementAccess && (
                     <div>
                         {/* Import and render the ProjectAndLanguageSettings component */}
                         <ProjectAndLanguageSettings />
+                    </div>
+                )}
+
+                {/* Access Denied Message for non-privileged users */}
+                {activeTab === 'management' && !hasManagementAccess && (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="text-center py-8">
+                            <div className="text-red-500 mb-4">
+                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h3>
+                            <p className="text-gray-600">
+                                Project & Language Management is only available for Admin and Developer roles.
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

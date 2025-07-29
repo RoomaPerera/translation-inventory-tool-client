@@ -121,7 +121,7 @@ const Analytics = () => {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Translation Analytics Dashboard</h1>
-              <p className="text-gray-600">Monitor KPIs and project performance</p>
+              {/* <p className="text-gray-600">Monitor KPIs and project performance</p> */}
             </div>
             <div className="flex items-center space-x-4">
               <select
