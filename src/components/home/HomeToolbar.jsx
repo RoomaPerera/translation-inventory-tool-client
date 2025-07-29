@@ -37,7 +37,7 @@ const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => 
       {user && (user.role === 'Admin' || user.role === 'Developer') && (
         <Button
           onClick={onAddNewTranslation}
-          className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2 !px-3 mr-4"
+          className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors duration-150 !py-2 !px-3 mr-4"
         >
           + Add new Translation
         </Button>
@@ -74,7 +74,7 @@ const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => 
           <label htmlFor="json" className="mr-4 text-sm">JSON</label>
           <input type="radio" id="csv" name="format" value="CSV" className="mr-1.5 h-4 w-4" />
           <label htmlFor="csv" className="mr-4 text-sm">CSV</label>
-          <Button className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2 !px-3">
+          <Button className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors duration-150 !py-2 !px-3">
             Download
           </Button>
         </div> 

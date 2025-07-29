@@ -17,7 +17,7 @@ export const SearchInput = ({ placeholder, value, onChange }) => {
           type="search"
           name="search"
           id="search"
-          className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className="block w-full rounded-md border-gray-300 pl-10 focus:outline-none sm:text-sm"
           placeholder={placeholder}
            value={value}       // Binds the input's display value
           onChange={onChange}   // Connects the typing handler
