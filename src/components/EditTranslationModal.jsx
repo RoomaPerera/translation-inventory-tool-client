@@ -41,7 +41,7 @@ const EditTranslationModal = ({
         translationId: collaborationEnabled ? translation._id : null,
     });
 
-    // Safely extract values from collaboration hook with proper fallbacks
+    // extract values from collaboration hook
     const {
         isConnected,
         connectionError,
@@ -147,13 +147,12 @@ const EditTranslationModal = ({
             }, 1000);
 
             // Handle text change for collaboration
-            handleTextChange(value, { autoSave: false }); // Don't auto-save on every keystroke
+            handleTextChange(value, { autoSave: false });
         }
     };
 
     const handleSuggestionClick = (text) => {
         setFormData({ ...formData, translatedText: text });
-        // Trigger collaboration update only if enabled
         if (collaborationEnabled) {
             handleTextChange(text, { autoSave: false });
         }
@@ -263,7 +262,7 @@ const EditTranslationModal = ({
 
                 {/* Active Users - only show if collaboration is enabled */}
                 {collaborationEnabled && activeUsers.length > 0 && (
-                    <div className="px-6 py-2 border-b bg-gray-50">
+                    <div className="border-b bg-gray-50">
                         <ActiveUsers
                             users={activeUsers}
                             currentUserId={currentUser?.id}
@@ -314,21 +313,20 @@ const EditTranslationModal = ({
                                     />
                                 </div>
 
-                                {/* Translation text with specific typing indicator */}
                                 <div className="relative">
                                     <label className="block text-sm font-medium text-gray-600 mb-1">
                                         Translation Text
                                     </label>
 
-                                    {/* Typing indicator specifically for translation field - only show if collaboration enabled */}
                                     {collaborationEnabled && translationFieldTypingUsers.length > 0 && (
                                         <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">
                                             <div className="flex items-center space-x-2">
                                                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                                                 <span className="text-sm text-blue-700">
-                                                    {translationFieldTypingUsers
-                                                        .map(userId => userService?.getUser?.(userId)?.name || `User ${userId.slice(-3)}`)
-                                                        .join(', ')}
+                                                    {translationFieldTypingUsers.map(userId => {
+                                                        const user = activeUsers.find(u => u.id === userId);
+                                                        return user?.userName || `User ${userId.slice(-4)}`;
+                                                    }).join(', ')}
                                                     {translationFieldTypingUsers.length === 1 ? ' is' : ' are'} typing in this field...
                                                 </span>
                                             </div>
@@ -338,7 +336,7 @@ const EditTranslationModal = ({
                                     <textarea
                                         name="translatedText"
                                         placeholder="Enter your translation here..."
-                                        rows="4"
+                                        rows="1"
                                         value={formData.translatedText}
                                         onChange={handleChange}
                                         className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base resize-none"
