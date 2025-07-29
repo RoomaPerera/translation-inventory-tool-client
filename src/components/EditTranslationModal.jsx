@@ -5,6 +5,7 @@ import nlpService from '../services/nlpService';
 import translationService from '../services/translationService';
 import axios from 'axios';
 import '../styles/modal.css';
+import TranslationQualityCheck from './TranslationQualityCheck';
 
 const EditTranslationModal = ({ isOpen, onClose, onSave, translation }) => {
   const [formData, setFormData] = useState({
@@ -190,7 +191,7 @@ useEffect(() => {
 }
 
                 {/* Translation Quality Check */}
-                <div className="space-y-3 border-t border-gray-200 pt-4 mt-4">
+                {/* <div className="space-y-3 border-t border-gray-200 pt-4 mt-4">
                   <h3 className="text-lg font-bold text-indigo-700">Translation Quality Check</h3>
 
 
@@ -229,7 +230,16 @@ useEffect(() => {
                       <p><strong>Marks:</strong> {qualityCheckResult.marks}</p>
                     </div>
                   )}
-                </div>
+                </div> */}
+
+                <TranslationQualityCheck
+                    translationKey={formData.translationKey}
+                    translatedText={formData.translatedText}
+                    onRunCheck={runQualityCheck}
+                    qualityCheckLoading={qualityCheckLoading}
+                    qualityCheckResult={qualityCheckResult}
+                    qualityCheckError={qualityCheckError}
+                />
                 {/* //================================= */}
 
                 <div>

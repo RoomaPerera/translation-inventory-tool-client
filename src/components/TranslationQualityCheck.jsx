@@ -106,3 +106,58 @@
 // };
 
 // export default TranslationQualityCheck;
+
+
+
+// components/TranslationQualityCheck.js
+import React from 'react';
+
+const TranslationQualityCheck = ({
+  translationKey,
+  translatedText,
+  onRunCheck,
+  qualityCheckLoading,
+  qualityCheckResult,
+  qualityCheckError
+}) => {
+  return (
+    <div className="space-y-3 border-t border-gray-200 pt-4 mt-4">
+      <h3 className="text-lg font-bold text-indigo-700">Translation Quality Check</h3>
+
+      <button
+        type="button"
+        onClick={onRunCheck}
+        disabled={qualityCheckLoading || !translationKey || !translatedText}
+        className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {qualityCheckLoading ? 'Checking...' : 'Check Quality'}
+      </button>
+
+      {qualityCheckError && (
+        <p className="text-red-600 mt-2">{qualityCheckError}</p>
+      )}
+
+      {qualityCheckResult && (
+        <div className="mt-4 bg-gray-50 p-3 rounded space-y-1">
+          <p><strong>Detected Target Language:</strong> {qualityCheckResult.detectedTargetLanguage}</p>
+          <p>
+            <strong>Language Match:</strong>{' '}
+            <span className={qualityCheckResult.languageMatch ? "text-green-600" : "text-red-600"}>
+              {qualityCheckResult.languageMatch ? "Yes" : "No"}
+            </span>
+          </p>
+          <p>
+            <strong>Translation Match:</strong>{' '}
+            <span className={qualityCheckResult.checkPassed ? "text-green-600" : "text-red-600"}>
+              {qualityCheckResult.checkPassed ? "Yes" : "No"}
+            </span>
+          </p>
+          <p><strong>Score:</strong> {qualityCheckResult.score}</p>
+          <p><strong>Marks:</strong> {qualityCheckResult.marks}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TranslationQualityCheck;
