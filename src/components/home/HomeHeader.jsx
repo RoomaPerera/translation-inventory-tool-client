@@ -58,7 +58,7 @@ const HomeHeader = ({
         {user && (user.role === "Admin" || user.role === "admin") && (
           <Button
             onClick={onAnomalyDashboardClick}
-            className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2.5 !px-4 mr-4"
+            className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors duration-150 !py-2.5 !px-4 mr-4"
           >
             Anomaly Dashboard
           </Button>
@@ -68,9 +68,9 @@ const HomeHeader = ({
           <Button
             onClick={onAssignLanguageClick}
             disabled={!currentProjectId}
-            className={`hover:bg-opacity-80 text-white !py-2.5 !px-4 ${
+            className={`text-white transition-colors duration-150 !py-2.5 !px-4 ${
               currentProjectId
-                ? "bg-brand-purple-base"
+                ? "bg-brand-purple-base hover:bg-opacity-90"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
           >

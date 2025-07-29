@@ -102,9 +102,9 @@ const TranslationTable = ({ user, translations = [], onEdit, onDelete, currentPa
                                             <Button
                                                 onClick={() => canEdit ? onEdit(t) : null}
                                                 disabled={!canEdit}
-                                                className={`!py-1 !px-3 border ${
+                                                className={`!py-1 !px-3 border transition-colors duration-150 ${
                                                     canEdit 
-                                                        ? 'border-gray-300 bg-white !text-gray-700 hover:bg-gray-100' 
+                                                        ? 'border-gray-300 bg-white !text-gray-700 hover:bg-gray-50' 
                                                         : 'border-gray-200 bg-gray-100 !text-gray-400 cursor-not-allowed'
                                                 }`}
                                                 title={!canEdit && user?.role === 'Translator' 
