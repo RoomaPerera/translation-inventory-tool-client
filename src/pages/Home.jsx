@@ -12,7 +12,6 @@ import useDebounce from "../hooks/useDebounce";
 import translationService from "../services/translationService";
 import projectService from "../services/projectService";
 import API from "../services/axiosInstance";
-import ConfirmModal from "../components/UserListComponents/ConfirmModal"; // <-- 1. Import the ConfirmModal
 
 const Home = () => {
   const navigate = useNavigate();
@@ -40,24 +39,22 @@ const Home = () => {
   const [isLangModalOpen, setLangModalOpen] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(null);
 
-  // --- 2. State to manage the delete confirmation modal ---
-  const [deleteTarget, setDeleteTarget] = useState(null); // Will hold the translation object to delete
+  const fetchProjects = useCallback(async () => {
+    try {
+      const response = await projectService.getProjects();
+      setProjects(response.data);
+      if (response.data.length > 0 && !filters.projectId) {
+        setFilters((prev) => ({ ...prev, projectId: response.data[0]._id }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch projects", err);
+      setError("Could not load projects. Please try again later.");
+    }
+  }, [filters.projectId]);
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await projectService.getProjects();
-        setProjects(response.data);
-        if (response.data.length > 0) {
-          setFilters((prev) => ({ ...prev, projectId: response.data[0]._id }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch projects", err);
-        setError("Could not load projects. Please try again later.");
-      }
-    };
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   const fetchTranslations = useCallback(async () => {
     if (!filters.projectId) {
@@ -101,6 +98,12 @@ const Home = () => {
     fetchTranslations();
   }, [fetchTranslations]);
 
+  // Handle successful language assignment by refreshing both projects and translations
+  const handleLanguageAssignmentSuccess = useCallback(() => {
+    fetchProjects(); // Refresh project data to show updated language assignments
+    fetchTranslations(); // Refresh translations in case new languages were added
+  }, [fetchProjects, fetchTranslations]);
+
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
     setCurrentPage(1);
@@ -124,27 +127,18 @@ const Home = () => {
     setEditModalOpen(true);
   };
 
-  // --- 3. This function now ONLY opens the modal ---
-  const handleDeleteRequest = (translation) => {
-    setDeleteTarget(translation);
-  };
-
-  // --- 4. This new function performs the actual deletion ---
-  const handleConfirmDelete = async () => {
-    if (deleteTarget) {
-      try {
-        await translationService.deleteTranslation(deleteTarget._id);
-        fetchTranslations(); // Refresh the list
-      } catch (err) {
-        alert("Failed to delete translation.");
-      } finally {
-        setDeleteTarget(null); // Close the modal
-      }
+  // Direct delete function to pass to TranslationTable
+  const handleDelete = async (translationId) => {
+    try {
+      await translationService.deleteTranslation(translationId);
+      fetchTranslations(); // Refresh the list
+    } catch (err) {
+      alert("Failed to delete translation.");
     }
   };
 
   const isAnyModalOpen =
-    isAddModalOpen || isEditModalOpen || isLangModalOpen || !!deleteTarget;
+    isAddModalOpen || isEditModalOpen || isLangModalOpen;
 
   return (
     <>
@@ -181,9 +175,7 @@ const Home = () => {
                 user={user}
                 translations={translations}
                 onEdit={handleEdit}
-                onDelete={(id) =>
-                  handleDeleteRequest(translations.find((t) => t._id === id))
-                }
+                onDelete={handleDelete}
                 currentPage={paginationData.currentPage}
                 itemsPerPage={10}
               />
@@ -223,15 +215,7 @@ const Home = () => {
                 isOpen={isLangModalOpen}
                 onClose={() => setLangModalOpen(false)}
                 project={projects.find(p => p._id === filters.projectId)}
-                onSuccess={fetchTranslations}
-            />
-            {/* --- 6. Add the ConfirmModal to the page --- */}
-            <ConfirmModal
-                open={!!deleteTarget}
-                title="Delete Translation"
-                message={`Are you sure you want to permanently delete the translation for the key "${deleteTarget?.translationKey}"?`}
-                onConfirm={handleConfirmDelete}
-                onCancel={() => setDeleteTarget(null)}
+                onSuccess={handleLanguageAssignmentSuccess}
             />
         </>
     );

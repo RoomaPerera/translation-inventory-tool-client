@@ -18,9 +18,14 @@ const TranslationTable = ({ user, translations = [], onEdit, onDelete, currentPa
         });
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (confirmModal.translationId) {
-            onDelete(confirmModal.translationId);
+            try {
+                await onDelete(confirmModal.translationId);
+            } catch (err) {
+                // Error handling is now done in the parent component
+                console.error('Delete failed:', err);
+            }
         }
         setConfirmModal({ open: false, translationId: null, translationKey: '' });
     };
