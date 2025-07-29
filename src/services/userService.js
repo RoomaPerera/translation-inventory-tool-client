@@ -21,6 +21,7 @@ const modifyLanguages = (userId, languages) => {
 const getPendingUsers = () => {
     return axiosInstance.get('/users/getPendingUsers');
 };
+
 /**
  * Fetches the list of all active users
  */
@@ -41,6 +42,7 @@ const getAllUsers = () => {
 const filterUserList = (role) => {
     return axiosInstance.get(`/users/filterUserList/${role}`);
 };
+
 /**
  * Alias for filterUserList to match UserList.jsx usage
  */
@@ -69,6 +71,7 @@ const rejectUser = (userId) => {
 const deleteUser = (userId) => {
     return axiosInstance.delete(`/users/deleteUser/${userId}`);
 };
+
 /**
  * get a user. (for real-time collaboration)
  */
@@ -81,6 +84,7 @@ const getUser = async (userId) => {
         return null;
     }
 };
+
 /**
  * Updates a pending user's role and status
  */
@@ -96,7 +100,6 @@ const updatePendingUser = (userId, role, approve) => {
 const userService = {
     assignLanguagesToUser,
     getPendingUsers,
-    updateUserApproval,
     deleteUser,
     getUserList,
     filterUserList,
@@ -104,7 +107,9 @@ const userService = {
     updatePendingUser,
     getUsersByRole,
     getAllUsers,
-    modifyLanguages
+    modifyLanguages,
+    approveUser,
+    rejectUser
 };
 
 export default userService;

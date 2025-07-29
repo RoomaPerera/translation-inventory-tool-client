@@ -1,41 +1,53 @@
 import React, { useState } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
-import ProjectAndLanguageSettings from './ProjectAndLanguageSettings'; // Import your existing component
+import ProjectAndLanguageSettings from './ProjectAndLanguageSettings';
+import UserSettings from '../components/UserListComponents/UserSettings';
 
 const Settings = () => {
     const { user } = useAuthContext();
     const [activeTab, setActiveTab] = useState('profile'); // Start with profile tab
 
+    // Check if user is admin
+    const isAdmin = user?.role?.toLowerCase() === 'admin';
+
     return (
         <main className="flex-grow p-5 bg-brand-bg-main min-h-screen">
             <div className="max-w-full">
                 <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
-                
+
                 {/* Tab Navigation */}
-                {/* <Link to="/settings/projects" className="settings-link">
-                    Project & Language Settings
-                </Link> */}
                 <div className="flex mb-6 border-b border-gray-200">
                     <button
-                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
-                            activeTab === 'profile'
-                                ? 'text-indigo-700 border-indigo-700 bg-white'
-                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
-                        }`}
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'profile'
+                            ? 'text-indigo-700 border-indigo-700 bg-white'
+                            : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
                         onClick={() => setActiveTab('profile')}
                     >
                         User Profile
                     </button>
                     <button
-                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
-                            activeTab === 'management'
-                                ? 'text-indigo-700 border-indigo-700 bg-white'
-                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
-                        }`}
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'management'
+                            ? 'text-indigo-700 border-indigo-700 bg-white'
+                            : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
                         onClick={() => setActiveTab('management')}
                     >
                         Project & Language Management
                     </button>
+
+                    {/* Admin-only User Management Tab */}
+                    {isAdmin && (
+                        <button
+                            className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'users'
+                                ? 'text-indigo-700 border-indigo-700 bg-white'
+                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                                }`}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            User Management
+                        </button>
+                    )}
                 </div>
 
                 {/* User Profile Section */}
@@ -46,57 +58,55 @@ const Settings = () => {
                             <p className="text-gray-600">
                                 View and manage your account information and preferences.
                             </p>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Username</label>
-                                    <input 
-                                        type="text" 
-                                        value={user?.userName || ''} 
-                                        readOnly 
+                                    <input
+                                        type="text"
+                                        value={user?.userName || ''}
+                                        readOnly
                                         className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Role</label>
-                                    <input 
-                                        type="text" 
-                                        value={user?.role || ''} 
-                                        readOnly 
+                                    <input
+                                        type="text"
+                                        value={user?.role || ''}
+                                        readOnly
                                         className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 capitalize focus:outline-none"
                                     />
                                 </div>
-                                
+
                                 {user?.email && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
-                                        <input 
-                                            type="email" 
-                                            value={user.email} 
-                                            readOnly 
+                                        <input
+                                            type="email"
+                                            value={user.email}
+                                            readOnly
                                             className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
                                         />
                                     </div>
                                 )}
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Account Status</label>
                                     <div className="flex items-center">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                            user?.isActive === true 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            <span className={`w-2 h-2 rounded-full mr-2 ${
-                                                user?.isActive === true ? 'bg-green-400' : 'bg-red-400'
-                                            }`}></span>
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user?.isActive === true
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
+                                            }`}>
+                                            <span className={`w-2 h-2 rounded-full mr-2 ${user?.isActive === true ? 'bg-green-400' : 'bg-red-400'
+                                                }`}></span>
                                             {user?.isActive === true ? 'Active' : 'Inactive'}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="border-t pt-6 mt-6">
                                 <h3 className="text-lg font-medium text-gray-800 mb-4">Account Actions</h3>
                                 <div className="flex flex-wrap gap-3">
@@ -115,8 +125,15 @@ const Settings = () => {
                 {/* Project & Language Management Section */}
                 {activeTab === 'management' && (
                     <div>
-                        {/* Import and render the ProjectAndLanguageSettings component */}
                         <ProjectAndLanguageSettings />
+                    </div>
+                )}
+
+                {/* Admin-only User Management Section */}
+                {activeTab === 'users' && isAdmin && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+
+                        <UserSettings />
                     </div>
                 )}
             </div>

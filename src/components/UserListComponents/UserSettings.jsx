@@ -1,512 +1,462 @@
-import React, { useEffect, useState } from 'react';
-import {
-    PlusIcon,
-    TrashIcon,
-    LanguageIcon,
-    UserGroupIcon,
-    ClockIcon,
-    CheckIcon,
-    XMarkIcon
-} from '@heroicons/react/24/solid';
-import Button from '../../reusableComponents/Button';
-import { Select } from '../reusableComponents/Select';
-import { Pagination } from '../reusableComponents/Pagination';
-import ConfirmModal from './ConfirmModal';
-import LanguageModal from './LanguageModal';
-import * as userService from '../../services/userService';
+import React, { useState, useEffect } from 'react';
+import userService from '../../services/userService';
 
-const ROLE_OPTIONS = [
-    { value: '', label: 'All Roles' },
-    { value: 'Translator', label: 'Translator' },
-    { value: 'Developer', label: 'Developer' },
-    { value: 'Administrator', label: 'Administrator' },
-];
+// Reusable Modal Component
+const Modal = ({ isOpen, onClose, title, message, type = 'success' }) => {
+    if (!isOpen) return null;
 
-const ROLE_OPTIONS_FOR_PENDING = [
-    { value: 'Translator', label: 'Translator' },
-    { value: 'Developer', label: 'Developer' },
-    { value: 'Administrator', label: 'Administrator' },
-];
+    const bgColor = type === 'success' ? 'bg-green-50' : type === 'error' ? 'bg-red-50' : 'bg-blue-50';
+    const textColor = type === 'success' ? 'text-green-800' : type === 'error' ? 'text-red-800' : 'text-blue-800';
+    const iconColor = type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400';
 
-const STATUS_OPTIONS = [
-    { value: 'approved', label: 'Approve' },
-    { value: 'rejected', label: 'Reject' },
-];
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+                <div className={`${bgColor} border border-opacity-25 rounded-md p-4`}>
+                    <div className="flex items-center">
+                        <div className={iconColor}>
+                            {type === 'success' && (
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                            )}
+                            {type === 'error' && (
+                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            )}
+                        </div>
+                        <div className="ml-3">
+                            <h3 className={`text-sm font-medium ${textColor}`}>{title}</h3>
+                            <p className={`text-sm ${textColor} mt-1`}>{message}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
-export default function UserSettings() {
-    const [activeTab, setActiveTab] = useState('active');
+// Reusable Pagination Component
+const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-    // Active Users State
+    const handlePrevious = () => {
+        if (currentPage > 1) {
+            onPageChange(currentPage - 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentPage < totalPages) {
+            onPageChange(currentPage + 1);
+        }
+    };
+
+    const fromItem = (currentPage - 1) * itemsPerPage + 1;
+    const toItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+    if (totalPages <= 1) return null;
+
+    return (
+        <nav className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6" aria-label="Pagination">
+            <div className="hidden sm:block">
+                <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{fromItem}</span> to <span className="font-medium">{toItem}</span> of{' '}
+                    <span className="font-medium">{totalItems}</span> results
+                </p>
+            </div>
+            <div className="flex flex-1 justify-between sm:justify-end">
+                <button
+                    onClick={handlePrevious}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Previous
+                </button>
+                <button
+                    onClick={handleNext}
+                    disabled={currentPage === totalPages}
+                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Next
+                </button>
+            </div>
+        </nav>
+    );
+};
+
+// Reusable Role Select Component
+const RoleSelect = ({ value, onChange, options = ['Admin', 'Developer', 'Translator'] }) => {
+    return (
+        <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+            {options.map((role) => (
+                <option key={role} value={role}>
+                    {role}
+                </option>
+            ))}
+        </select>
+    );
+};
+
+const UserSettings = () => {
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [selectedRole, setSelectedRole] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [langTarget, setLangTarget] = useState(null);
-
-    // Pending Users State
     const [pendingUsers, setPendingUsers] = useState([]);
-    const [pendingLoading, setPendingLoading] = useState(false);
-    const [processing, setProcessing] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('pending');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pendingCurrentPage, setPendingCurrentPage] = useState(1);
+    const [selectedRoles, setSelectedRoles] = useState({});
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
 
-    const pageSize = 5;
-    const totalItems = users.length;
+    const itemsPerPage = 10;
 
     useEffect(() => {
-        if (activeTab === 'active') {
-            fetchUsers();
-        } else {
-            fetchPendingUsers();
-        }
-    }, [activeTab, selectedRole]);
+        fetchData();
+    }, []);
 
-    // Active Users Functions
-    const fetchUsers = async () => {
-        setLoading(true);
+    // Initialize selected roles when pending users change
+    useEffect(() => {
+        const initialRoles = {};
+        pendingUsers.forEach(user => {
+            initialRoles[user._id] = user.role || 'Translator';
+        });
+        setSelectedRoles(initialRoles);
+    }, [pendingUsers]);
+
+    const fetchData = async () => {
         try {
-            const data = selectedRole
-                ? await userService.getUsersByRole(selectedRole)
-                : await userService.getAllUsers();
-            setUsers(data);
-            setCurrentPage(1);
+            setLoading(true);
+            setError(null);
+
+            // Fetch all users (returns data directly)
+            const allUsers = await userService.getAllUsers();
+            setUsers(allUsers);
+
+            // Fetch pending users (returns response object)
+            const pendingResponse = await userService.getPendingUsers();
+            setPendingUsers(pendingResponse.data);
+
         } catch (err) {
-            console.error('Failed to fetch users:', err);
-            alert('Failed to fetch users. Please try again.');
+            console.error('Error fetching data:', err);
+            setError('Failed to load user data. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const confirmDelete = async () => {
-        if (!deleteTarget) return;
+    const showModal = (title, message, type = 'success') => {
+        setModal({ isOpen: true, title, message, type });
+        setTimeout(() => {
+            setModal({ isOpen: false, title: '', message: '', type: 'success' });
+            fetchData(); // Auto refresh after modal closes
+        }, 2000);
+    };
 
+    const handleApproveUser = async (userId) => {
         try {
-            await userService.deleteUser(deleteTarget._id);
-            setUsers(u => u.filter(x => x._id !== deleteTarget._id));
-            setDeleteTarget(null);
-            alert(`User ${deleteTarget.userName} has been deleted successfully.`);
+            const selectedRole = selectedRoles[userId] || 'Translator';
+            await userService.approveUser(userId, { role: selectedRole });
+            showModal('Success', 'User approved successfully!', 'success');
         } catch (err) {
-            console.error('Failed to delete user:', err);
-            alert(err.response?.data?.error || 'Failed to delete user');
+            console.error('Error approving user:', err);
+            showModal('Error', 'Failed to approve user. Please try again.', 'error');
         }
     };
 
-    const saveLanguages = async (langs) => {
-        if (!langTarget) return;
-
+    const handleRejectUser = async (userId) => {
         try {
-            await userService.modifyLanguages(langTarget._id, langs);
-            alert(`Languages updated for ${langTarget.userName}`);
-            setLangTarget(null);
-            fetchUsers();
+            await userService.rejectUser(userId);
+            showModal('Success', 'User rejected successfully!', 'success');
         } catch (err) {
-            console.error('Failed to update languages:', err);
-            alert(err.response?.data?.error || 'Failed to update languages');
+            console.error('Error rejecting user:', err);
+            showModal('Error', 'Failed to reject user. Please try again.', 'error');
         }
     };
 
-    // Pending Users Functions
-    const fetchPendingUsers = async () => {
-        setPendingLoading(true);
-        try {
-            const response = await userService.getPendingUsers();
-            const users = response.data.map(user => ({
-                ...user,
-                selectedRole: user.role,
-                selectedStatus: 'approved'
-            }));
-            setPendingUsers(users);
-        } catch (err) {
-            console.error('Failed to fetch pending users:', err);
-        } finally {
-            setPendingLoading(false);
-        }
-    };
-
-    const updateUserField = (userId, field, value) => {
-        setPendingUsers(prev =>
-            prev.map(user =>
-                user._id === userId
-                    ? { ...user, [field]: value }
-                    : user
-            )
-        );
-    };
-
-    const handleSubmit = async (user) => {
-        setProcessing(prev => ({ ...prev, [user._id]: true }));
-
-        try {
-            const isApproved = user.selectedStatus === 'approved';
-
-            if (isApproved) {
-                await userService.approveUser(user._id);
-            } else {
-                await userService.rejectUser(user._id);
+    const handleDeleteUser = async (userId) => {
+        if (window.confirm('Are you sure you want to delete this user?')) {
+            try {
+                await userService.deleteUser(userId);
+                showModal('Success', 'User deleted successfully!', 'success');
+            } catch (err) {
+                console.error('Error deleting user:', err);
+                showModal('Error', 'Failed to delete user. Please try again.', 'error');
             }
-
-            setPendingUsers(prev => prev.filter(u => u._id !== user._id));
-
-            const action = isApproved ? 'approved' : 'rejected';
-            alert(`User ${user.userName} has been ${action} successfully.`);
-
-        } catch (err) {
-            console.error('Failed to update user status:', err);
-            alert(err.response?.data?.error || 'Failed to update user status');
-        } finally {
-            setProcessing(prev => ({ ...prev, [user._id]: false }));
         }
     };
 
-    // Pagination for active users
-    const startIdx = (currentPage - 1) * pageSize;
-    const paged = users.slice(startIdx, startIdx + pageSize);
+    const handleRoleChange = (userId, newRole) => {
+        setSelectedRoles(prev => ({
+            ...prev,
+            [userId]: newRole
+        }));
+    };
 
-    // Blur when modal open
-    const containerClass = (deleteTarget || langTarget) ? 'filter blur-sm' : '';
+    // Pagination logic for users list
+    const totalUsers = users.length;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentUsers = users.slice(startIndex, endIndex);
 
-    const tabs = [
-        {
-            id: 'active',
-            name: 'Active Users',
-            icon: UserGroupIcon,
-            count: users.length
-        },
-        {
-            id: 'pending',
-            name: 'Pending Approvals',
-            icon: ClockIcon,
-            count: pendingUsers.length
-        }
-    ];
+    // Pagination logic for pending users list
+    const totalPendingUsers = pendingUsers.length;
+    const pendingStartIndex = (pendingCurrentPage - 1) * itemsPerPage;
+    const pendingEndIndex = pendingStartIndex + itemsPerPage;
+    const currentPendingUsers = pendingUsers.slice(pendingStartIndex, pendingEndIndex);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span className="ml-2 text-gray-600">Loading users...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="flex items-center">
+                    <div className="text-red-400">
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="ml-3">
+                        <h3 className="text-sm font-medium text-red-800">Error</h3>
+                        <p className="text-sm text-red-700 mt-1">{error}</p>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <button
+                        onClick={fetchData}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-6">
-            <div className={containerClass}>
-                {/* Header */}
-                <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-purple-700">User Management</h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Manage user accounts, approvals, and permissions.
-                    </p>
-                </div>
+        <div className="space-y-6">
+            {/* Modal */}
+            <Modal
+                isOpen={modal.isOpen}
+                onClose={() => setModal({ ...modal, isOpen: false })}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+            />
 
-                {/* Tab Navigation */}
-                <div className="border-b border-gray-200 mb-6">
-                    <nav className="-mb-px flex space-x-8">
-                        {tabs.map((tab) => {
-                            const Icon = tab.icon;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`${activeTab === tab.id
-                                        ? 'border-purple-500 text-purple-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                        } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200`}
-                                >
-                                    <Icon className="h-5 w-5 mr-2" />
-                                    {tab.name}
-                                    {tab.count > 0 && (
-                                        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${activeTab === tab.id
-                                            ? 'bg-purple-100 text-purple-600'
-                                            : 'bg-gray-100 text-gray-600'
-                                            }`}>
-                                            {tab.count}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+            {/* Tab Navigation */}
+            <div className="bg-white rounded-lg shadow-md">
+                <div className="border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                        <button
+                            onClick={() => {
+                                setActiveTab('pending');
+                                setCurrentPage(1);
+                                setPendingCurrentPage(1);
+                            }}
+                            className={`${activeTab === 'pending'
+                                ? 'border-indigo-500 text-indigo-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                        >
+                            Pending Users ({pendingUsers.length})
+                        </button>
+                        <button
+                            onClick={() => {
+                                setActiveTab('all');
+                                setCurrentPage(1);
+                                setPendingCurrentPage(1);
+                            }}
+                            className={`${activeTab === 'all'
+                                ? 'border-indigo-500 text-indigo-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                        >
+                            All Users ({users.length})
+                        </button>
                     </nav>
                 </div>
 
-                {/* Active Users Tab */}
-                {activeTab === 'active' && (
-                    <div>
-                        {/* Controls */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">Active Users</h3>
-                                <p className="text-sm text-gray-600">
-                                    Manage all active users – filter by role, delete users, or edit translator languages.
-                                </p>
+                {/* Tab Content */}
+                <div className="p-6">
+                    {/* Pending Users Tab */}
+                    {activeTab === 'pending' && (
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">
+                                    Pending Users
+                                </h2>
+                                <button
+                                    onClick={fetchData}
+                                    className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors"
+                                >
+                                    Refresh
+                                </button>
                             </div>
-                            <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-                                <div className="w-48">
-                                    <Select
-                                        label="Filter by Role"
-                                        options={ROLE_OPTIONS}
-                                        selected={selectedRole}
-                                        onSelect={setSelectedRole}
+
+                            {pendingUsers.length > 0 ? (
+                                <div>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Username
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Email
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Role
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Actions
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {currentPendingUsers.map((user) => (
+                                                    <tr key={user._id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                            {user.userName}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {user.email}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <RoleSelect
+                                                                value={selectedRoles[user._id] || user.role || 'Translator'}
+                                                                onChange={(newRole) => handleRoleChange(user._id, newRole)}
+                                                            />
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                            <button
+                                                                onClick={() => handleApproveUser(user._id)}
+                                                                className="text-green-600 hover:text-green-900 transition-colors"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectUser(user._id)}
+                                                                className="text-red-600 hover:text-red-900 transition-colors"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Pagination for Pending Users */}
+                                    <Pagination
+                                        currentPage={pendingCurrentPage}
+                                        totalItems={totalPendingUsers}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setPendingCurrentPage}
                                     />
                                 </div>
-                                <Button variant="primary" className="flex items-center bg-purple-600 hover:bg-purple-700">
-                                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                                    Add User
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Active Users Table */}
-                        <div className="bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-purple-600 text-white">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                User Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                Role
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                Languages
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {loading ? (
-                                            <tr>
-                                                <td colSpan={4} className="px-6 py-8 text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent mr-3"></div>
-                                                        <span className="text-gray-500">Loading users...</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ) : paged.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                                                    {selectedRole ? `No ${selectedRole.toLowerCase()}s found.` : 'No users found.'}
-                                                </td>
-                                            </tr>
-                                        ) : paged.map(user => (
-                                            <tr key={user._id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {user.userName}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role === 'Administrator'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : user.role === 'Developer'
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-green-100 text-green-800'
-                                                        }`}>
-                                                        {user.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {user.role === 'Translator' ? (
-                                                        user.languages && user.languages.length > 0 ? (
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {user.languages.slice(0, 3).map(lang => (
-                                                                    <span key={lang} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                                                                        {lang}
-                                                                    </span>
-                                                                ))}
-                                                                {user.languages.length > 3 && (
-                                                                    <span className="text-xs text-gray-400">
-                                                                        +{user.languages.length - 3} more
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-gray-400 italic">No languages assigned</span>
-                                                        )
-                                                    ) : (
-                                                        <span className="text-gray-400">—</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex justify-end space-x-2">
-                                                        {user.role === 'Translator' && (
-                                                            <Button
-                                                                variant="link"
-                                                                onClick={() => setLangTarget(user)}
-                                                                className="px-3 py-1 text-xs flex items-center"
-                                                                title="Edit Languages"
-                                                            >
-                                                                <LanguageIcon className="h-4 w-4 mr-1" />
-                                                                Languages
-                                                            </Button>
-                                                        )}
-                                                        <Button
-                                                            variant="secondary"
-                                                            onClick={() => setDeleteTarget(user)}
-                                                            className="px-3 py-1 text-xs flex items-center text-red-600 hover:text-red-800"
-                                                            title="Delete User"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4 mr-1" />
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Pagination */}
-                        {totalItems > pageSize && (
-                            <div className="mt-6">
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalItems={totalItems}
-                                    itemsPerPage={pageSize}
-                                    onPageChange={setCurrentPage}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Pending Users Tab */}
-                {activeTab === 'pending' && (
-                    <div>
-                        <div className="mb-6">
-                            <h3 className="text-lg font-medium text-gray-900">Pending User Approvals</h3>
-                            <p className="text-sm text-gray-600">
-                                Review and approve or reject pending user registrations.
-                            </p>
-                        </div>
-
-                        {pendingLoading ? (
-                            <div className="bg-white rounded-lg shadow p-8 text-center">
-                                <div className="flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent mr-3"></div>
-                                    <span className="text-gray-500">Loading pending users...</span>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>No pending users found.</p>
                                 </div>
-                            </div>
-                        ) : pendingUsers.length === 0 ? (
-                            <div className="bg-white rounded-lg shadow p-8 text-center">
-                                <CheckIcon className="mx-auto h-12 w-12 text-green-400" />
-                                <h3 className="mt-2 text-sm font-medium text-gray-900">No pending users</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    All user registrations have been processed.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="bg-white shadow ring-1 ring-black ring-opacity-5 rounded-lg overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-purple-600 text-white">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                    User Details
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                    Role
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                    Action
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                                    Submit
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {pendingUsers.map((user) => (
-                                                <tr key={user._id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div>
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {user.userName}
-                                                            </div>
-                                                            <div className="text-sm text-gray-500">
-                                                                {user.email}
-                                                            </div>
-                                                            <div className="text-xs text-gray-400">
-                                                                Registered: {new Date(user.createdAt).toLocaleDateString()}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="w-40">
-                                                            <Select
-                                                                options={ROLE_OPTIONS_FOR_PENDING}
-                                                                selected={user.selectedRole}
-                                                                onSelect={(value) =>
-                                                                    updateUserField(user._id, 'selectedRole', value)
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="w-32">
-                                                            <Select
-                                                                options={STATUS_OPTIONS}
-                                                                selected={user.selectedStatus}
-                                                                onSelect={(value) =>
-                                                                    updateUserField(user._id, 'selectedStatus', value)
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <Button
-                                                            variant={user.selectedStatus === 'approved' ? 'primary' : 'secondary'}
-                                                            onClick={() => handleSubmit(user)}
-                                                            disabled={processing[user._id]}
-                                                            className={`px-4 py-2 text-sm ${user.selectedStatus === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                                                        >
-                                                            {processing[user._id] ? (
-                                                                <div className="flex items-center">
-                                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                                                    Processing...
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    {user.selectedStatus === 'approved' ? (
-                                                                        <>
-                                                                            <CheckIcon className="h-4 w-4 mr-1" />
-                                                                            Approve
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <XMarkIcon className="h-4 w-4 mr-1" />
-                                                                            Reject
-                                                                        </>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    </td>
+                            )}
+                        </div>
+                    )}
+
+                    {/* All Users Tab */}
+                    {activeTab === 'all' && (
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                                All Users
+                            </h2>
+
+                            {users.length > 0 ? (
+                                <div>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Username
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Role
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Actions
+                                                    </th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {currentUsers.map((user) => (
+                                                    <tr key={user._id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                            {user.userName}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.role === 'Admin' ? 'bg-purple-100 text-purple-800' :
+                                                                user.role === 'Developer' ? 'bg-blue-100 text-blue-800' :
+                                                                    user.role === 'Translator' ? 'bg-orange-100 text-orange-800' :
+                                                                        'bg-green-100 text-green-800'
+                                                                }`}>
+                                                                {user.role}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                            <button
+                                                                onClick={() => handleDeleteUser(user._id)}
+                                                                className="text-red-600 hover:text-red-900 transition-colors"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Pagination */}
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={totalUsers}
+                                        itemsPerPage={itemsPerPage}
+                                        onPageChange={setCurrentPage}
+                                    />
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>No users found.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-
-            {/* Modals */}
-            <ConfirmModal
-                open={!!deleteTarget}
-                title={`Delete ${deleteTarget?.userName}?`}
-                message={`This will mark ${deleteTarget?.userName} as deleted and cannot be undone. The user will no longer be able to access the system.`}
-                onConfirm={confirmDelete}
-                onCancel={() => setDeleteTarget(null)}
-            />
-
-            <LanguageModal
-                open={!!langTarget}
-                userName={langTarget?.userName}
-                initial={langTarget?.languages || []}
-                onSave={saveLanguages}
-                onCancel={() => setLangTarget(null)}
-            />
         </div>
     );
-}
+};
+
+export default UserSettings;
