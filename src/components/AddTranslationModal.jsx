@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import useDebounce from "../hooks/useDebounce"; // Import our new hook
-import TranslationHelper from "./home/TranslationHelper"; // Import our new component
+import SuggestionPanel from "./home/SuggestionPanel"; // Import suggestion panel
+import GlossaryPanel from "./home/GlossaryPanel"; // Import glossary panel
 import nlpService from "../services/nlpService";
 import translationService from "../services/translationService";
 import projectService from "../services/projectService"; // Import project service
@@ -310,12 +311,15 @@ const AddTranslationModal = ({ isOpen, onClose, onSave, projectId, selectedProje
               </div>
             </form>
           </div>
-          {/* Column 2: The Helper */}
-          <div>
-            <TranslationHelper
+          {/* Column 2: The Helper Components */}
+          <div className="space-y-4">
+            <SuggestionPanel
               suggestions={suggestions}
-              glossary={glossary}
               onSuggestionClick={handleSuggestionClick}
+              isLoading={isLoadingNlp}
+            />
+            <GlossaryPanel
+              glossary={glossary}
               isLoading={isLoadingNlp}
             />
           </div>
