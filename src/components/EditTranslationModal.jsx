@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import useDebounce from "../hooks/useDebounce";
-import nlpService from "../services/nlpService";
-import translationService from "../services/translationService";
-import { useCollaboration } from "../hooks/useCollaboration";
-import VersionHistory from "./TranslationComponents/VersionHistory";
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */
+import React, { useState, useEffect, useRef } from 'react';
+import useDebounce from '../hooks/useDebounce';
+import nlpService from '../services/nlpService';
+import translationService from '../services/translationService';
+import { useCollaboration } from '../hooks/useCollaboration';
+import VersionHistory from './TranslationComponents/VersionHistory';
 import {
     ConnectionStatus,
     ActiveUsers,
     ConflictModal,
-} from "./CollaborationComponents/CollaborationIndicators";
-import SuggestionPanel from './home/SuggestionPanel'; // <-- CORRECT IMPORT
-import "../styles/modal.css";
+} from './CollaborationComponents/CollaborationIndicators';
+import SuggestionPanel from './home/SuggestionPanel';
+import '../styles/modal.css';
+import TranslationQualityCheck from './TranslationQualityCheck';
+import API from '../services/api'; // Ensure API is imported for axios instance
 
 const EditTranslationModal = ({
     isOpen,
@@ -23,22 +27,27 @@ const EditTranslationModal = ({
 }) => {
     // Form state
     const [formData, setFormData] = useState({
-        translationKey: "",
-        translatedText: "",
-        status: "pending",
-        product: "",
-        language: "",
+        translationKey: '',
+        translatedText: '',
+        status: 'pending',
+        product: 'Rubix',
+        language: '',
     });
 
     // State for suggestions
     const [suggestions, setSuggestions] = useState([]);
     const [isLoadingNlp, setIsLoadingNlp] = useState(false);
     const debouncedKey = useDebounce(formData.translationKey, 500);
-    const [error, setError] = useState("");
+    const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     // State for tab navigation
-    const [activeTab, setActiveTab] = useState("edit");
+    const [activeTab, setActiveTab] = useState('edit');
+
+    // Quality Check state (from final-2)
+    const [qualityCheckLoading, setQualityCheckLoading] = useState(false);
+    const [qualityCheckResult, setQualityCheckResult] = useState(null);
+    const [qualityCheckError, setQualityCheckError] = useState('');
 
     // Use the collaboration hook only when we have a translation ID
     const collaborationEnabled = translation?._id && isOpen;
@@ -46,7 +55,7 @@ const EditTranslationModal = ({
         translationId: collaborationEnabled ? translation._id : null,
     });
 
-    // extract values from collaboration hook
+    // Extract values from collaboration hook
     const {
         isConnected,
         connectionError,
@@ -68,40 +77,43 @@ const EditTranslationModal = ({
         isTyping: false,
         hasUnsavedChanges: false,
         conflictData: null,
-        handleTextChange: () => { },
-        handleSaveTranslation: () => { },
-        handleResolveConflict: () => { },
-        handleStartTyping: () => { },
-        handleStopTyping: () => { },
+        handleTextChange: () => {},
+        handleSaveTranslation: () => {},
+        handleResolveConflict: () => {},
+        handleStartTyping: () => {},
+        handleStopTyping: () => {},
     };
 
     const lastSavedData = useRef({});
     const typingTimeoutRef = useRef(null);
 
     // Role-based permissions
-    const canEditTranslationKey = currentUser?.role !== "translator";
+    const canEditTranslationKey = currentUser?.role !== 'translator';
     const canEditTranslation = true;
 
     // Effect to populate the form when the modal opens
     useEffect(() => {
         if (translation) {
             const newFormData = {
-                translationKey: translation.translationKey || "",
-                translatedText: translation.translatedText || "",
-                status: translation.status || "pending",
-                product: translation.product || "Rubix",
-                language: translation.language || "",
+                translationKey: translation.translationKey || '',
+                translatedText: translation.translatedText || '',
+                status: translation.status || 'pending',
+                product: translation.product || 'Rubix',
+                language: translation.language || '',
             };
             setFormData(newFormData);
             lastSavedData.current = { ...newFormData };
-            setActiveTab("edit"); // Reset to edit tab when modal opens
+            setActiveTab('edit'); // Reset to edit tab when modal opens
             setSuggestions([]);
+            // Reset quality check state when modal opens
+            setQualityCheckResult(null);
+            setQualityCheckError('');
         }
     }, [translation]);
 
     // Effect to fetch NLP data - only when on edit tab
     useEffect(() => {
-        if (debouncedKey && activeTab === "edit") {
+        if (debouncedKey && activeTab === 'edit') {
             const fetchNlpData = async () => {
                 setIsLoadingNlp(true);
                 try {
@@ -112,7 +124,7 @@ const EditTranslationModal = ({
                     );
                     setSuggestions(suggestRes.data.suggestions || []);
                 } catch (nlpError) {
-                    console.error("Failed to fetch NLP data:", nlpError);
+                    console.error('Failed to fetch NLP data:', nlpError);
                     setSuggestions([]);
                 } finally {
                     setIsLoadingNlp(false);
@@ -128,18 +140,18 @@ const EditTranslationModal = ({
         const { name, value } = e.target;
 
         // Role-based restrictions
-        if (name === "translationKey" && !canEditTranslationKey) {
+        if (name === 'translationKey' && !canEditTranslationKey) {
             return;
         }
 
-        if (name === "translatedText" && !canEditTranslation) {
+        if (name === 'translatedText' && !canEditTranslation) {
             return;
         }
 
         setFormData({ ...formData, [name]: value });
 
         // Handle typing indicators specifically for translation text
-        if (name === "translatedText" && collaborationEnabled) {
+        if (name === 'translatedText' && collaborationEnabled) {
             // Start typing indicator
             handleStartTyping();
 
@@ -173,53 +185,85 @@ const EditTranslationModal = ({
     };
 
     const handleConflictResolve = (resolution, localText = null) => {
-        if (resolution === "accept-server") {
-            handleResolveConflict("accept-server", null);
+        if (resolution === 'accept-server') {
+            handleResolveConflict('accept-server', null);
             // Update form with server text
             setFormData(prev => ({
                 ...prev,
                 translatedText: conflictData.serverText
             }));
-        } else if (resolution === "keep-local") {
-            handleResolveConflict("keep-local", formData.translatedText);
+        } else if (resolution === 'keep-local') {
+            handleResolveConflict('keep-local', formData.translatedText);
+        }
+    };
+
+    // Quality check function (from final-2)
+    const runQualityCheck = async () => {
+        setQualityCheckError('');
+        setQualityCheckResult(null);
+        setQualityCheckLoading(true);
+        const user = localStorage.getItem('user');
+        console.log('Running quality check with user:', user);
+        const userData = user ? JSON.parse(user) : {};
+        const token = userData.token || '';
+        console.log('Running quality check with token:', token);
+        try {
+            const response = await API.post(
+                '/translations/quality-check',
+                {
+                    inputText: formData.translationKey,
+                    translatedText: formData.translatedText,
+                    expectedTargetLanguage: translation?.language || ''
+                },
+            )
+            setQualityCheckResult(response.data);
+        } catch (err) {
+            setQualityCheckError(err.response?.data?.error || 'Quality check failed');
+        } finally {
+            setQualityCheckLoading(false);
         }
     };
 
     // Calculate if there are unsaved changes
-    const hasUnsavedChanges = collaborationUnsavedChanges || JSON.stringify(formData) !== JSON.stringify(lastSavedData.current);
+    const hasUnsavedChanges = collaborationUnsavedChanges || 
+        JSON.stringify(formData) !== JSON.stringify(lastSavedData.current);
 
     const handleSaveChanges = async () => {
         if (!hasUnsavedChanges) return;
 
-        setError("");
+        setError('');
         setIsSaving(true);
 
-        const updateData = {
-            translatedText: formData.translatedText,
-            status: formData.status,
-            language: formData.language,
-        };
-
-        if (canEditTranslationKey) {
-            updateData.translationKey = formData.translationKey;
-        }
-
-        // Only allow status updates for Admin/Developer roles
-        if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Developer')) {
-            updateData.status = formData.status;
-        }
-
         try {
+            const updateData = {
+                translatedText: formData.translatedText,
+                status: formData.status,
+                language: formData.language,
+            };
+
+            if (canEditTranslationKey) {
+                updateData.translationKey = formData.translationKey;
+            }
+
+            // Only allow status updates for Admin/Developer roles
+            if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Developer')) {
+                updateData.status = formData.status;
+            }
+
+            // Save using translation service
             await translationService.updateTranslation(translation._id, updateData);
             lastSavedData.current = { ...formData };
 
-            // Save through collaboration system
-            handleSaveTranslation(formData.translatedText);
+            // Save through collaboration system if enabled
+            if (collaborationEnabled) {
+                handleSaveTranslation(formData.translatedText);
+            }
 
             onSave();
-            onClose();
-        } catch (err) {
-            setError(err.response?.data?.message || "Failed to update translation.");
+            
+        } catch (saveError) {
+            console.error('Save failed:', saveError);
+            setError(saveError.response?.data?.message || 'Failed to update translation.');
         } finally {
             setIsSaving(false);
         }
@@ -233,6 +277,39 @@ const EditTranslationModal = ({
 
     // Get typing users for translation field specifically
     const translationFieldTypingUsers = typingUsers.filter(userId => userId !== currentUser?.id);
+
+    // Cleanup typing timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Modal close handler
+    const handleClose = () => {
+        if (hasUnsavedChanges) {
+            const shouldClose = window.confirm('You have unsaved changes. Are you sure you want to close?');
+            if (!shouldClose) return;
+        }
+        
+        // Reset all state
+        setFormData({
+            translationKey: '',
+            translatedText: '',
+            status: 'pending',
+            product: 'Rubix',
+            language: '',
+        });
+        setSuggestions([]);
+        setError('');
+        setQualityCheckResult(null);
+        setQualityCheckError('');
+        setActiveTab('edit');
+        
+        onClose();
+    };
 
     const modalStyle = {
         width: "900px",
@@ -248,7 +325,7 @@ const EditTranslationModal = ({
     const currentProject = projects.find(p => p._id === translation?.projectId) || null;
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal-backdrop" onClick={handleClose}>
             <div
                 className="modal-content"
                 style={modalStyle}
@@ -268,7 +345,7 @@ const EditTranslationModal = ({
                                 connectionError={connectionError}
                             />
                         )}
-                        <button onClick={onClose} className="modal-close-button">
+                        <button onClick={handleClose} className="modal-close-button">
                             ×
                         </button>
                     </div>
@@ -297,14 +374,25 @@ const EditTranslationModal = ({
                         Edit Translation
                     </button>
                     <button
-                        onClick={() => setActiveTab("history")}
-                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "history"
+                        onClick={() => setActiveTab("quality")}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "quality"
                             ? "border-brand-purple-base text-brand-purple-base"
                             : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                             }`}
                     >
-                        Version History
+                        Quality Check
                     </button>
+                    {collaborationEnabled && (
+                        <button
+                            onClick={() => setActiveTab("history")}
+                            className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "history"
+                                ? "border-brand-purple-base text-brand-purple-base"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                }`}
+                        >
+                            Version History
+                        </button>
+                    )}
                 </div>
 
                 {/* Tab Content */}
@@ -329,8 +417,9 @@ const EditTranslationModal = ({
                                             type="text"
                                             name="translationKey"
                                             value={formData.translationKey}
-                                            readOnly
-                                            className="w-full p-2 bg-gray-100 border-b-2 border-gray-300"
+                                            onChange={handleChange}
+                                            readOnly={!canEditTranslationKey}
+                                            className={`w-full p-2 border-b-2 border-gray-300 ${!canEditTranslationKey ? 'bg-gray-100' : 'focus:outline-none focus:border-brand-purple-base'}`}
                                         />
                                     </div>
 
@@ -357,7 +446,7 @@ const EditTranslationModal = ({
                                         <textarea
                                             name="translatedText"
                                             placeholder="Enter your translation here..."
-                                            rows="1"
+                                            rows="4"
                                             value={formData.translatedText}
                                             onChange={handleChange}
                                             className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base resize-none"
@@ -373,7 +462,7 @@ const EditTranslationModal = ({
                                         )}
                                     </div>
 
-                                    {currentUser && (
+                                    {currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Developer') && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-1">
                                                 Status
@@ -386,6 +475,7 @@ const EditTranslationModal = ({
                                             >
                                                 <option value="pending">Pending</option>
                                                 <option value="approved">Approved</option>
+                                                <option value="rejected">Rejected</option>
                                             </select>
                                         </div>
                                     )}
@@ -396,16 +486,21 @@ const EditTranslationModal = ({
                                 {/* Save buttons - fixed at bottom */}
                                 <div className="flex justify-end items-center pt-6 border-t bg-white">
                                     <div className="flex gap-4">
+                                        {hasUnsavedChanges && (
+                                            <span className="text-sm text-gray-500 self-center mr-4">
+                                                Unsaved changes
+                                            </span>
+                                        )}
                                         <button
                                             type="button"
-                                            onClick={onClose}
+                                            onClick={handleClose}
                                             className="py-2 px-5 rounded-md border text-gray-700 hover:bg-gray-100"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={isSaving}
+                                            disabled={isSaving || !hasUnsavedChanges}
                                             className="py-2 px-5 rounded-md bg-brand-purple-base text-white font-semibold transition hover:bg-opacity-80 disabled:bg-opacity-50"
                                         >
                                             {isSaving ? "Saving..." : "Save Changes"}
@@ -447,6 +542,18 @@ const EditTranslationModal = ({
                             </div>
                         </div>
                     </div>
+                ) : activeTab === "quality" ? (
+                    // Quality Check Tab Content
+                    <div className="p-6 flex-1 overflow-y-auto">
+                        <TranslationQualityCheck
+                            translationKey={formData.translationKey}
+                            translatedText={formData.translatedText}
+                            onRunCheck={runQualityCheck}
+                            qualityCheckLoading={qualityCheckLoading}
+                            qualityCheckResult={qualityCheckResult}
+                            qualityCheckError={qualityCheckError}
+                        />
+                    </div>
                 ) : (
                     // Version History Tab Content
                     <div className="p-6 flex-1 overflow-hidden">
@@ -460,7 +567,7 @@ const EditTranslationModal = ({
                 )}
 
                 {/* Conflict Resolution Modal - only show if collaboration enabled */}
-                {collaborationEnabled && (
+                {collaborationEnabled && conflictData && (
                     <ConflictModal
                         conflictData={conflictData}
                         onResolve={handleConflictResolve}

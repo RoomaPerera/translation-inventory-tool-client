@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
 import ProjectAndLanguageSettings from './ProjectAndLanguageSettings';
+import UserProfile from '../components/UserProfile';
+import ReadabilityValidator from '../components/ReadabilityValidator'; // Import from final-2
 import UserSettings from '../components/UserListComponents/UserSettings';
 
 const Settings = () => {
     const { user } = useAuthContext();
-    const [activeTab, setActiveTab] = useState('profile'); // Start with profile tab
+    const [activeTab, setActiveTab] = useState('profile');
 
     // Check if user is admin
     const isAdmin = user?.role?.toLowerCase() === 'admin';
@@ -15,7 +17,6 @@ const Settings = () => {
             <div className="max-w-full">
                 <h1 className="text-3xl font-bold mb-6 text-indigo-800">Settings</h1>
 
-                {/* Tab Navigation */}
                 <div className="flex mb-6 border-b border-gray-200">
                     <button
                         className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'profile'
@@ -26,6 +27,7 @@ const Settings = () => {
                     >
                         User Profile
                     </button>
+                    
                     <button
                         className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'management'
                             ? 'text-indigo-700 border-indigo-700 bg-white'
@@ -36,7 +38,18 @@ const Settings = () => {
                         Project & Language Management
                     </button>
 
-                    {/* Admin-only User Management Tab */}
+                    {/* ReadabilityValidator Tab - from final-2 */}
+                    <button
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'readability'
+                            ? 'text-indigo-700 border-indigo-700 bg-white'
+                            : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
+                        onClick={() => setActiveTab('readability')}
+                    >
+                        Readability Validator
+                    </button>
+
+                    {/* Admin-only User Management Tab - from final-3 */}
                     {isAdmin && (
                         <button
                             className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'users'
@@ -50,7 +63,9 @@ const Settings = () => {
                     )}
                 </div>
 
-                {/* User Profile Section */}
+                {/* Tab Contents */}
+                
+                {/* User Profile Section - Enhanced version from final-3 */}
                 {activeTab === 'profile' && (
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <h2 className="text-xl font-semibold mb-4">User Profile</h2>
@@ -119,6 +134,11 @@ const Settings = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Include the original UserProfile component as well for any additional functionality */}
+                        <div className="mt-6 border-t pt-6">
+                            <UserProfile />
+                        </div>
                     </div>
                 )}
 
@@ -129,10 +149,24 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Admin-only User Management Section */}
+                {/* ReadabilityValidator Section - from final-2 */}
+                {activeTab === 'readability' && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h2 className="text-xl font-semibold mb-4">Readability Validator</h2>
+                        <p className="text-gray-600 mb-6">
+                            Validate and analyze the readability of your translations.
+                        </p>
+                        <ReadabilityValidator />
+                    </div>
+                )}
+
+                {/* Admin-only User Management Section - from final-3 */}
                 {activeTab === 'users' && isAdmin && (
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-
+                        <h2 className="text-xl font-semibold mb-4">User Management</h2>
+                        <p className="text-gray-600 mb-6">
+                            Manage user accounts, roles, and permissions.
+                        </p>
                         <UserSettings />
                     </div>
                 )}
