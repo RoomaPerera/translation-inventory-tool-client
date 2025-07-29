@@ -149,81 +149,179 @@ const AddProject = ({ onSuccess, availableLanguages = [] }) => {
       setIsAssigning(false);
     }
   };
+// Enhanced CSV handling for both inline and column formats
+const handleCSVUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    setFormData(prev => ({
+      ...prev,
+      csvFile: null,
+      csvKeys: []
+    }));
+    return;
+  }
 
-  // Enhanced CSV handling with better validation
-  const handleCSVUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      setFormData(prev => ({
-        ...prev,
-        csvFile: null,
-        csvKeys: []
-      }));
-      return;
-    }
+  // Validate file type
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    setError('Please select a valid CSV file.');
+    return;
+  }
 
-    // Validate file type
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setError('Please select a valid CSV file.');
-      return;
-    }
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    setError('CSV file is too large. Please select a file smaller than 5MB.');
+    return;
+  }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('CSV file is too large. Please select a file smaller than 5MB.');
-      return;
-    }
-
-    Papa.parse(file, {
-      header: false,
-      skipEmptyLines: true,
-      dynamicTyping: false, // Keep as strings
-      complete: (results) => {
-        try {
-          // Extract all values from CSV and flatten
-          let keys = results.data.flat().filter(key => key && key.trim() !== '');
-          
-          // Remove duplicates and validate keys
-          keys = [...new Set(keys.map(key => key.trim()))];
-          
-          // Validate keys (basic validation)
-          const validKeys = keys.filter(key => {
-            // Check if key is not empty and contains valid characters
-            return key.length > 0 && key.length <= 100 && !/[<>\"'&]/.test(key);
+  Papa.parse(file, {
+    header: false,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+    complete: (results) => {
+      try {
+        console.log('Raw CSV data:', results.data);
+        
+        let keys = [];
+        let detectedFormat = '';
+        
+        // Smart detection and handling of different CSV formats
+        results.data.forEach((row, rowIndex) => {
+          row.forEach((cell, cellIndex) => {
+            if (cell && typeof cell === 'string') {
+              const trimmedCell = cell.trim();
+              
+              // Check if cell contains multiple comma-separated keys (inline format)
+              if (trimmedCell.includes(',') && trimmedCell.split(',').length > 2) {
+                // Likely inline format: "key1,key2,key3,..."
+                const splitKeys = trimmedCell.split(',').map(key => key.trim());
+                keys.push(...splitKeys);
+                
+                if (!detectedFormat) {
+                  detectedFormat = `inline (${splitKeys.length} keys in cell [${rowIndex + 1},${cellIndex + 1}])`;
+                }
+              } else {
+                // Single key (column/row format)
+                keys.push(trimmedCell);
+                
+                if (!detectedFormat && keys.length === 1) {
+                  detectedFormat = 'column/row format';
+                }
+              }
+            }
           });
-
-          if (validKeys.length === 0) {
-            setError('No valid translation keys found in the CSV file.');
-            return;
+        });
+        
+        console.log(`Detected CSV format: ${detectedFormat}`);
+        console.log('Extracted keys before validation:', keys);
+        
+        // Remove duplicates and empty values
+        keys = [...new Set(keys.filter(key => key && key.trim() !== ''))];
+        
+        console.log(`Unique keys (${keys.length} total):`, keys);
+        
+        // Enhanced validation - optimized for translation keys
+        const validKeys = [];
+        const invalidKeys = [];
+        
+        keys.forEach(key => {
+          const trimmedKey = key.trim();
+          
+          // Translation key validation rules:
+          // - Not empty after trimming
+          // - Between 1-200 characters  
+          // - No HTML-like characters (<>)
+          // - Allow common translation key characters: letters, numbers, dots, underscores, hyphens
+          // - Block obviously invalid values
+          const isValid = 
+            trimmedKey.length > 0 && 
+            trimmedKey.length <= 200 && 
+            !/[<>]/.test(trimmedKey) && 
+            trimmedKey !== 'undefined' && 
+            trimmedKey !== 'null' &&
+            trimmedKey !== 'NULL' &&
+            !/^[\s\t\r\n]*$/.test(trimmedKey); // Not just whitespace
+            
+          if (isValid) {
+            validKeys.push(trimmedKey);
+          } else {
+            let reason = 'Unknown issue';
+            if (trimmedKey.length === 0) reason = 'Empty after trimming';
+            else if (trimmedKey.length > 200) reason = 'Too long (>200 chars)';
+            else if (/[<>]/.test(trimmedKey)) reason = 'Contains HTML characters (<>)';
+            else if (['undefined', 'null', 'NULL'].includes(trimmedKey)) reason = 'Invalid literal value';
+            else if (/^[\s\t\r\n]*$/.test(trimmedKey)) reason = 'Only whitespace';
+            
+            invalidKeys.push({ key: trimmedKey, reason });
           }
+        });
 
-          if (validKeys.length !== keys.length) {
-            const skipped = keys.length - validKeys.length;
-            console.warn(`Skipped ${skipped} invalid keys from CSV`);
-          }
-
-          setFormData(prev => ({
-            ...prev,
-            csvFile: file,
-            csvKeys: validKeys
-          }));
-
-          // Clear any previous errors
-          if (error && error.includes('CSV')) {
-            setError(null);
-          }
-
-        } catch (parseError) {
-          console.error('Error processing CSV data:', parseError);
-          setError('Failed to process CSV file. Please check the file format.');
+        console.log(`Valid keys (${validKeys.length}):`, validKeys);
+        if (invalidKeys.length > 0) {
+          console.log(`Invalid keys (${invalidKeys.length}):`, invalidKeys);
         }
-      },
-      error: (parseError) => {
-        console.error('CSV parsing error:', parseError);
-        setError('Failed to parse CSV file. Please ensure it\'s a valid CSV format.');
+
+        // Enhanced error handling with format-specific guidance
+        if (validKeys.length === 0) {
+          let errorMsg = 'No valid translation keys found in the CSV file.';
+          
+          if (keys.length === 0) {
+            errorMsg += ' The CSV appears to be empty or contains no readable content.';
+          } else if (invalidKeys.length > 0) {
+            const reasons = [...new Set(invalidKeys.map(item => item.reason))];
+            errorMsg += ` Found ${keys.length} items but none passed validation. Issues: ${reasons.join(', ')}.`;
+          }
+          
+          // Add format-specific guidance
+          errorMsg += '\n\nSupported formats:\n';
+          errorMsg += '• Inline: "key1,key2,key3" (comma-separated in one cell)\n';
+          errorMsg += '• Column: One key per cell/row\n';
+          errorMsg += '• Mixed: Combination of both formats';
+          
+          console.error('CSV validation failed:', { 
+            detectedFormat,
+            rawData: results.data, 
+            extractedKeys: keys, 
+            validKeys, 
+            invalidKeys 
+          });
+          setError(errorMsg);
+          return;
+        }
+
+        // Success message with format detection info
+        let successInfo = `Successfully loaded ${validKeys.length} translation keys`;
+        if (detectedFormat) {
+          successInfo += ` (detected format: ${detectedFormat})`;
+        }
+        
+        if (invalidKeys.length > 0) {
+          console.warn(`${successInfo}, skipped ${invalidKeys.length} invalid keys:`, invalidKeys);
+        } else {
+          console.log(successInfo);
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          csvFile: file,
+          csvKeys: validKeys
+        }));
+
+        // Clear any previous errors
+        if (error && error.includes('CSV')) {
+          setError(null);
+        }
+
+      } catch (parseError) {
+        console.error('Error processing CSV data:', parseError);
+        setError('Failed to process CSV file. Please check the file format and try again.');
       }
-    });
-  };
+    },
+    error: (parseError) => {
+      console.error('CSV parsing error:', parseError);
+      setError('Failed to parse CSV file. Please ensure it\'s a valid CSV format and try again.');
+    }
+  });
+};
 
   // UPDATED: Enhanced CSV import function with better error handling
   const importTranslationsFromCSV = async (projectId) => {

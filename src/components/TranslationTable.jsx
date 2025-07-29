@@ -78,43 +78,27 @@ const TranslationTable = ({ user, translations = [], onEdit, onDelete, currentPa
                                     key={t._id} 
                                     className={`hover:bg-gray-50 ${
                                         isTranslatorWithRestrictedAccess ? 'bg-gray-25 opacity-75' : ''
-                                    } ${isFromCSV ? 'bg-blue-25' : ''}`}
+                                    }`}
                                     title={isTranslatorWithRestrictedAccess 
                                         ? `This translation is in ${t.language.toUpperCase()} - you can only edit: ${user.languages?.join(', ')}` 
-                                        : isFromCSV ? 'This entry was imported from CSV and needs translation' : ''}
+                                        : ''}
                                 >
                                     <td className="p-4 whitespace-nowrap text-sm text-gray-700 font-medium">{rowNumber}</td>
                                     <td className="p-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                         {t.translationKey}
-                                        {isFromCSV && (
-                                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                CSV
-                                            </span>
-                                        )}
                                     </td>
                                     <td className={`p-4 whitespace-nowrap text-sm uppercase ${
                                         isTranslatorWithRestrictedAccess ? 'text-gray-400' : 'text-gray-500'
                                     }`}>
                                         {t.language}
-                                        {user?.role === 'Translator' && (
-                                            <span className="ml-2">
-                                                {canEdit ? '' : ''}
-                                            </span>
-                                        )}
                                     </td>
                                     <td className="p-4 whitespace-nowrap text-sm text-gray-700">
-                                        {isFromCSV ? (
-                                            <span className="italic text-gray-400">
-                                                [No translation yet]
-                                            </span>
-                                        ) : (
-                                            t.translatedText
-                                        )}
+                                        {t.translatedText || ''}
                                     </td>
                                     <td className="p-4 whitespace-nowrap text-sm">
                                         <span className={`py-1 px-3 text-xs font-bold rounded-full text-white ${
-                                            isFromCSV 
-                                                ? "bg-orange-500" 
+                                            isFromCSV || t.status === "pending"
+                                                ? "bg-yellow-500" 
                                                 : t.status === "approved" 
                                                     ? "bg-green-500" 
                                                     : "bg-yellow-500"
@@ -123,27 +107,20 @@ const TranslationTable = ({ user, translations = [], onEdit, onDelete, currentPa
                                         </span>
                                     </td>
                                     <td className="p-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        {(() => {
-                                            const canEdit = canEditTranslation(t);
-                                            return (
-                                                <Button
-                                                    onClick={() => canEdit ? onEdit(t) : null}
-                                                    disabled={!canEdit}
-                                                    className={`!py-1 !px-3 border ${
-                                                        canEdit 
-                                                            ? `border-gray-300 bg-white !text-gray-700 hover:bg-gray-100 ${
-                                                                isFromCSV ? '!border-blue-300 !bg-blue-50 !text-blue-700 hover:!bg-blue-100' : ''
-                                                            }` 
-                                                            : 'border-gray-200 bg-gray-100 !text-gray-400 cursor-not-allowed'
-                                                    }`}
-                                                    title={!canEdit && user?.role === 'Translator' 
-                                                        ? `You can only edit translations in your assigned languages: ${user.languages?.join(', ')}` 
-                                                        : isFromCSV ? 'Edit this CSV-imported translation entry' : ''}
-                                                >
-                                                    Edit
-                                                </Button>
-                                            );
-                                        })()}
+                                        <Button
+                                            onClick={() => canEdit ? onEdit(t) : null}
+                                            disabled={!canEdit}
+                                            className={`!py-1 !px-3 ${
+                                                canEdit 
+                                                    ? 'bg-transparent border border-gray-300 !text-gray-700 hover:bg-gray-100' 
+                                                    : 'bg-transparent border border-gray-200 !text-gray-400 cursor-not-allowed'
+                                            }`}
+                                            title={!canEdit && user?.role === 'Translator' 
+                                                ? `You can only edit translations in your assigned languages: ${user.languages?.join(', ')}` 
+                                                : ''}
+                                        >
+                                            Edit
+                                        </Button>
                                         {/* Only show Delete button for Admin and Developer */}
                                         {user && (user.role === 'Admin' || user.role === 'Developer') && (
                                             <DestructiveButton
