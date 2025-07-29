@@ -1,9 +1,9 @@
 import React from "react";
 import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
 } from "react-router-dom";
 
 import { useAuthContext } from "./hooks/useAuthContext";
@@ -28,20 +28,20 @@ import ProjectDetails from './pages/ProjectDetails';
 import Analytics from './pages/Analytics';
 
 function PrivateRoute({ children }) {
-  const { user } = useAuthContext();
-  return user ? children : <Navigate to="/login" />;
+    const { user } = useAuthContext();
+    return user ? children : <Navigate to="/login" />;
 }
 function App() {
-  const { authReady } = useAuthContext();
+    const { authReady } = useAuthContext();
 
-  // Prevent route flicker while checking auth state
-  if (!authReady) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <span className="text-xl text-gray-600">Loading...</span>
-      </div>
-    );
-  }
+    // Prevent route flicker while checking auth state
+    if (!authReady) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <span className="text-xl text-gray-600">Loading...</span>
+            </div>
+        );
+    }
 
   return (
     <Router>
@@ -65,24 +65,24 @@ function App() {
             }
           />
 
-          <Route
-            path="/admin/anomalies"
-            element={
-              <PrivateRoute>
-                <AdminAnomalyDashboard />
-              </PrivateRoute>
-            }
-          />
+                    <Route
+                        path="/admin/anomalies"
+                        element={
+                            <PrivateRoute>
+                                <AdminAnomalyDashboard />
+                            </PrivateRoute>
+                        }
+                    />
 
-          <Route path="/settings" element={<Settings />} />
-          {/* Redirect unmatched routes to home */}
-          <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
-          <Route path="/project-details" element={<ProjectDetails />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
-  );
+                    <Route path="/settings" element={<Settings />} />
+                    {/* Redirect unmatched routes to home */}
+                    <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
+                    <Route path="/project-details" element={<ProjectDetails />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+            </Routes>
+        </Router>
+    );
 }
 export default App;

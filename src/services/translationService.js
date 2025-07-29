@@ -37,13 +37,13 @@ const getTranslations = async (page = 1, limit = 10, filters = {}) => {
         limit,
         ...filters
     };
-    
+
     const cacheKey = getCacheKey('/translations', params);
     const cached = getCache(cacheKey);
     if (cached) {
         return { data: cached };
     }
-    
+
     try {
         const response = await API.get('/translations', { params });
         setCache(cacheKey, response.data);
