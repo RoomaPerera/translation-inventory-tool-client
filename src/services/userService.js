@@ -9,6 +9,13 @@ const assignLanguagesToUser = (userId, languages) => {
 };
 
 /**
+ * Alias for assignLanguagesToUser to match UserList.jsx usage
+ */
+const modifyLanguages = (userId, languages) => {
+    return assignLanguagesToUser(userId, languages);
+};
+
+/**
  * Fetches the list of all users with a 'Pending' status.
  */
 const getPendingUsers = () => {
@@ -20,11 +27,25 @@ const getPendingUsers = () => {
 const getUserList = () => {
     return axiosInstance.get('/users/getUserList');
 };
+
+/**
+ * Alias for getUserList to match UserList.jsx usage
+ */
+const getAllUsers = () => {
+    return getUserList().then(response => response.data);
+};
+
 /**
  * Filters active users by role
  */
 const filterUserList = (role) => {
     return axiosInstance.get(`/users/filterUserList/${role}`);
+};
+/**
+ * Alias for filterUserList to match UserList.jsx usage
+ */
+const getUsersByRole = (role) => {
+    return filterUserList(role).then(response => response.data);
 };
 
 /**
@@ -59,6 +80,17 @@ const getUser = async (userId) => {
         return null;
     }
 };
+/**
+ * Updates a pending user's role and status
+ */
+const updatePendingUser = (userId, role, approve) => {
+    if (approve) {
+        // First update the role if it's different, then approve
+        return axiosInstance.put(`/users/${userId}/approve`, { approve: true, role });
+    } else {
+        return axiosInstance.put(`/users/${userId}/reject`);
+    }
+};
 
 const userService = {
     assignLanguagesToUser,
@@ -68,7 +100,11 @@ const userService = {
     deleteUser,
     getUserList,
     filterUserList,
-    getUser
+    getUser,
+    updatePendingUser,
+    getUsersByRole,
+    getAllUsers,
+    modifyLanguages
 };
 
 export default userService;

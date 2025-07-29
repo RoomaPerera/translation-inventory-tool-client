@@ -129,7 +129,7 @@ const VersionHistory = ({
             // Add a 800ms delay before fetching diff
             diffTimeoutRef.current = setTimeout(() => {
                 fetchDiff(hoveredIndex);
-            }, 800);
+            }, 300);
         } else {
             setDiff(null);
             setDiffLoading(false);
@@ -185,7 +185,7 @@ const VersionHistory = ({
         // Set new hover timeout for 300ms delay
         hoverTimeoutRef.current = setTimeout(() => {
             setHoveredIndex(index);
-        }, 300);
+        }, 100);
     };
 
     const handleHoverEnd = () => {
@@ -197,7 +197,7 @@ const VersionHistory = ({
         // Add slight delay before hiding diff to prevent flickering
         hoverTimeoutRef.current = setTimeout(() => {
             setHoveredIndex(null);
-        }, 200);
+        }, 100);
     };
 
     const handleDiffHover = () => {
@@ -327,15 +327,17 @@ const VersionHistory = ({
 
     if (loading) {
         return (
-            <div className={`bg-white rounded-lg shadow-lg border p-6 ${className}`}>
-                <div className="mb-4">
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                <div className="p-4 border-b flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-800">
                         Version History
                     </h3>
                 </div>
-                <div className="text-center text-gray-500 py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple-base mx-auto mb-4"></div>
-                    Loading revisions...
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple-base mx-auto mb-4"></div>
+                        Loading revisions...
+                    </div>
                 </div>
             </div>
         );
@@ -343,21 +345,23 @@ const VersionHistory = ({
 
     if (error) {
         return (
-            <div className={`bg-white rounded-lg shadow-lg border p-6 ${className}`}>
-                <div className="mb-4">
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                <div className="p-4 border-b flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-800">
                         Version History
                     </h3>
                 </div>
-                <div className="text-center text-red-500 py-8">
-                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-                    <p className="text-sm">{error}</p>
-                    <button
-                        onClick={fetchRevisions}
-                        className="mt-4 px-4 py-2 bg-brand-purple-base text-white rounded hover:bg-brand-purple-base/80 transition-colors text-sm"
-                    >
-                        Try Again
-                    </button>
+                <div className="flex-1 flex items-center justify-center text-red-500">
+                    <div className="text-center">
+                        <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm mb-4">{error}</p>
+                        <button
+                            onClick={fetchRevisions}
+                            className="px-4 py-2 bg-brand-purple-base text-white rounded hover:bg-brand-purple-base/80 transition-colors text-sm"
+                        >
+                            Try Again
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -365,19 +369,16 @@ const VersionHistory = ({
 
     return (
         <>
-            <div className={`bg-white rounded-lg shadow-lg border max-w-md ${className}`}>
-                {/* Header */}
-                <div className="p-4 border-b">
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                {/* Header - Fixed */}
+                <div className="p-4 border-b flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-800">
                         Version History
                     </h3>
                 </div>
 
-                {/* Scrollable Content */}
-                <div
-                    className="overflow-y-auto"
-                    style={{ maxHeight: '400px' }}
-                >
+                {/* Scrollable Content - Takes remaining space */}
+                <div className="flex-1 overflow-y-auto">
                     <div className="p-4 space-y-4">
                         {/* Current Version */}
                         <div className="p-3 bg-gray-50 border-l-4 border-brand-purple-base rounded-r-lg">
@@ -458,14 +459,11 @@ const VersionHistory = ({
                                 </div>
                             ))
                         )}
-
-                        {/* Bottom padding to ensure all content is accessible */}
-                        <div style={{ height: '100px' }}></div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-3 border-t bg-gray-50 text-xs text-gray-500">
+                {/* Footer - Fixed */}
+                <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 flex-shrink-0">
                     <p>Hover to see changes, click to revert. Current changes will be saved automatically.</p>
                 </div>
             </div>

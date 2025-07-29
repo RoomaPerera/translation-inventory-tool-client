@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import useDebounce from "../hooks/useDebounce";
-import TranslationHelper from "./home/TranslationHelper";
 import nlpService from "../services/nlpService";
 import translationService from "../services/translationService";
 import { useCollaboration } from "../hooks/useCollaboration";
+import VersionHistory from "./TranslationComponents/VersionHistory";
 import {
     ConnectionStatus,
     ActiveUsers,
@@ -16,6 +16,7 @@ const EditTranslationModal = ({
     onClose,
     onSave,
     translation,
+    projects = [],
     currentUser,
     userService,
 }) => {
@@ -28,12 +29,15 @@ const EditTranslationModal = ({
         language: "",
     });
 
-    // State for the Translation Helper
+    // State for suggestions
     const [suggestions, setSuggestions] = useState([]);
     const [isLoadingNlp, setIsLoadingNlp] = useState(false);
     const debouncedKey = useDebounce(formData.translationKey, 500);
     const [error, setError] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+
+    // State for tab navigation
+    const [activeTab, setActiveTab] = useState("edit");
 
     // Use the collaboration hook only when we have a translation ID
     const collaborationEnabled = translation?._id && isOpen;
@@ -89,19 +93,21 @@ const EditTranslationModal = ({
             };
             setFormData(newFormData);
             lastSavedData.current = { ...newFormData };
+            setActiveTab("edit"); // Reset to edit tab when modal opens
             setSuggestions([]);
         }
     }, [translation]);
 
-    // Effect to fetch NLP data
+    // Effect to fetch NLP data - only when on edit tab
     useEffect(() => {
-        if (debouncedKey) {
+        if (debouncedKey && activeTab === "edit") {
             const fetchNlpData = async () => {
                 setIsLoadingNlp(true);
                 try {
                     const suggestRes = await nlpService.getSuggestions(
                         debouncedKey,
-                        formData.product
+                        formData.product,
+                        translation.projectId
                     );
                     setSuggestions(suggestRes.data.suggestions || []);
                 } catch (nlpError) {
@@ -115,7 +121,7 @@ const EditTranslationModal = ({
         } else {
             setSuggestions([]);
         }
-    }, [debouncedKey, formData.product]);
+    }, [debouncedKey, formData.product, translation?.projectId, activeTab]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -197,6 +203,11 @@ const EditTranslationModal = ({
             updateData.translationKey = formData.translationKey;
         }
 
+        // Only allow status updates for Admin/Developer roles
+        if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Developer')) {
+            updateData.status = formData.status;
+        }
+
         try {
             await translationService.updateTranslation(translation._id, updateData);
             lastSavedData.current = { ...formData };
@@ -232,6 +243,8 @@ const EditTranslationModal = ({
 
     if (!isOpen) return null;
 
+    const currentProject = projects.find(p => p._id === translation?.projectId) || null;
+
     return (
         <div className="modal-backdrop" onClick={onClose}>
             <div
@@ -243,8 +256,7 @@ const EditTranslationModal = ({
                     <div>
                         <h2>Edit Translation</h2>
                         <div className="subtitle">
-                            {formData.product}: {translation?.translationKey} (
-                            {translation?.language?.toUpperCase()})
+                            {currentProject ? currentProject.name : 'Unknown Project'} | {translation?.language?.toUpperCase() || 'Unknown'}
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -271,139 +283,179 @@ const EditTranslationModal = ({
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-6 p-6 flex-1 overflow-hidden">
-                    {/* Column 1: The Form */}
-                    <div className="modal-body !p-0 flex flex-col h-full">
-                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
-                            <div className="space-y-5 flex-1 overflow-y-auto">
-                                {/* Translation key */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">
-                                        Translation Key (Source Text)
-                                        {!canEditTranslationKey && (
-                                            <span className="text-xs text-gray-400 ml-2">
-                                                (Read-only for translators)
-                                            </span>
-                                        )}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="translationKey"
-                                        value={formData.translationKey}
-                                        onChange={handleChange}
-                                        readOnly={!canEditTranslationKey}
-                                        className={`w-full p-2 border-b-2 ${canEditTranslationKey
-                                            ? "border-gray-300 focus:outline-none focus:border-brand-purple-base"
-                                            : "bg-gray-100 border-gray-300 cursor-not-allowed"
-                                            }`}
-                                    />
-                                </div>
+                {/* Tab Navigation */}
+                <div className="flex border-b border-gray-200 px-6">
+                    <button
+                        onClick={() => setActiveTab("edit")}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "edit"
+                            ? "border-brand-purple-base text-brand-purple-base"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            }`}
+                    >
+                        Edit Translation
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("history")}
+                        className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "history"
+                            ? "border-brand-purple-base text-brand-purple-base"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            }`}
+                    >
+                        Version History
+                    </button>
+                </div>
 
-                                {/* Language field */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                                        Language
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="language"
-                                        value={formData.language}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base"
-                                    />
-                                </div>
-
-                                <div className="relative">
-                                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                                        Translation Text
-                                    </label>
-
-                                    {collaborationEnabled && translationFieldTypingUsers.length > 0 && (
-                                        <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                                                <span className="text-sm text-blue-700">
-                                                    {translationFieldTypingUsers.map(userId => {
-                                                        const user = activeUsers.find(u => u.id === userId);
-                                                        return user?.userName || `User ${userId.slice(-4)}`;
-                                                    }).join(', ')}
-                                                    {translationFieldTypingUsers.length === 1 ? ' is' : ' are'} typing in this field...
+                {/* Tab Content */}
+                {activeTab === "edit" ? (
+                    // Edit Translation Tab Content
+                    <div className="grid grid-cols-2 gap-6 p-6 flex-1 overflow-hidden">
+                        {/* Column 1: The Form */}
+                        <div className="modal-body !p-0 flex flex-col h-full">
+                            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                                <div className="space-y-5 flex-1 overflow-y-auto">
+                                    {/* Translation key */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500 mb-1">
+                                            Translation Key (Source Text)
+                                            {!canEditTranslationKey && (
+                                                <span className="text-xs text-gray-400 ml-2">
+                                                    (Read-only for translators)
                                                 </span>
+                                            )}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="translationKey"
+                                            value={formData.translationKey}
+                                            readOnly
+                                            className="w-full p-2 bg-gray-100 border-b-2 border-gray-300"
+                                        />
+                                    </div>
+
+                                    <div className="relative">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                                            Translation Text
+                                        </label>
+
+                                        {collaborationEnabled && translationFieldTypingUsers.length > 0 && (
+                                            <div className="mb-2 p-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                                    <span className="text-sm text-blue-700">
+                                                        {translationFieldTypingUsers.map(userId => {
+                                                            const user = activeUsers.find(u => u.id === userId);
+                                                            return user?.userName || `User ${userId.slice(-4)}`;
+                                                        }).join(', ')}
+                                                        {translationFieldTypingUsers.length === 1 ? ' is' : ' are'} typing in this field...
+                                                    </span>
+                                                </div>
                                             </div>
+                                        )}
+
+                                        <textarea
+                                            name="translatedText"
+                                            placeholder="Enter your translation here..."
+                                            rows="1"
+                                            value={formData.translatedText}
+                                            onChange={handleChange}
+                                            className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base resize-none"
+                                            required
+                                        />
+
+                                        {/* Show if current user is typing - only if collaboration enabled */}
+                                        {collaborationEnabled && isTyping && (
+                                            <div className="absolute -bottom-6 left-0 flex items-center space-x-1 text-xs text-gray-500">
+                                                <div className="w-1 h-1 bg-gray-400 rounded-full animate-ping" />
+                                                <span>You're typing...</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {currentUser && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                                Status
+                                            </label>
+                                            <select
+                                                name="status"
+                                                value={formData.status}
+                                                onChange={handleChange}
+                                                className="w-full p-2 border bg-white rounded-md border-gray-300 focus:outline-none focus:border-brand-purple-base"
+                                            >
+                                                <option value="pending">Pending</option>
+                                                <option value="approved">Approved</option>
+                                            </select>
                                         </div>
                                     )}
 
-                                    <textarea
-                                        name="translatedText"
-                                        placeholder="Enter your translation here..."
-                                        rows="1"
-                                        value={formData.translatedText}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base resize-none"
-                                        required
-                                    />
-
-                                    {/* Show if current user is typing - only if collaboration enabled */}
-                                    {collaborationEnabled && isTyping && (
-                                        <div className="absolute -bottom-6 left-0 flex items-center space-x-1 text-xs text-gray-500">
-                                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-ping" />
-                                            <span>You're typing...</span>
-                                        </div>
-                                    )}
+                                    {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
                                 </div>
 
-                                <div className="mt-8">
-                                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                                        Status
-                                    </label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border bg-white rounded-md border-gray-300 focus:outline-none focus:border-brand-purple-base"
-                                    >
-                                        <option value="pending">Pending</option>
-                                        <option value="approved">Approved</option>
-                                    </select>
+                                {/* Save buttons - fixed at bottom */}
+                                <div className="flex justify-end items-center pt-6 border-t bg-white">
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            className="py-2 px-5 rounded-md border text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSaving}
+                                            className="py-2 px-5 rounded-md bg-brand-purple-base text-white font-semibold transition hover:bg-opacity-80 disabled:bg-opacity-50"
+                                        >
+                                            {isSaving ? "Saving..." : "Save Changes"}
+                                        </button>
+                                    </div>
                                 </div>
+                            </form>
+                        </div>
 
-                                {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+                        {/* Column 2: Suggestions Panel */}
+                        <div className="flex flex-col gap-4">
+                            <div className="border border-gray-200 bg-white rounded-lg shadow-sm p-4 h-full">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+                                    Translation Suggestions
+                                </h3>
+                                {isLoadingNlp && <p className="text-sm text-gray-500">Fetching suggestions...</p>}
+                                {!isLoadingNlp && (
+                                    <div>
+                                        {suggestions.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {suggestions.map((s, i) => (
+                                                    <li
+                                                        key={i}
+                                                        onClick={() => handleSuggestionClick(s.translatedText)}
+                                                        className="p-2 bg-gray-50 border border-gray-200 rounded-md cursor-pointer hover:bg-indigo-100 hover:border-indigo-300 transition"
+                                                    >
+                                                        <p className="text-sm text-gray-800">{s.translatedText}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            From "{s.sourceText}" (Similarity: {Math.round(s.similarity * 100)}%)
+                                                        </p>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">No similar translations found.</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-
-                            {/* Save buttons - fixed at bottom */}
-                            <div className="flex justify-end items-center pt-6 border-t bg-white">
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={onClose}
-                                        className="py-2 px-5 rounded-md border text-gray-700 hover:bg-gray-100"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="py-2 px-5 rounded-md bg-brand-purple-base text-white font-semibold transition hover:bg-opacity-80 disabled:bg-opacity-50"
-                                    >
-                                        {isSaving ? "Saving..." : "Save & Close"}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                        </div>
                     </div>
-
-                    {/* Column 2: The Helper Panel with fixed height and scrollable content */}
-                    <div className="h-full overflow-hidden">
-                        <TranslationHelper
-                            suggestions={suggestions}
+                ) : (
+                    // Version History Tab Content
+                    <div className="p-6 flex-1 overflow-hidden">
+                        <VersionHistory
                             translationId={translation?._id}
                             currentText={formData.translatedText}
-                            onSuggestionClick={handleSuggestionClick}
-                            onVersionRevert={handleVersionRevert}
-                            isLoading={isLoadingNlp}
+                            onRevert={handleVersionRevert}
+                            className="h-full"
                         />
                     </div>
-                </div>
+                )}
 
                 {/* Conflict Resolution Modal - only show if collaboration enabled */}
                 {collaborationEnabled && (
