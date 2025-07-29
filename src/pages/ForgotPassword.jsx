@@ -238,8 +238,8 @@ const ForgotPassword = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className={`bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  disabled={isLoading || !isResendDisabled}
+                  className={`bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 ${isLoading || !isResendDisabled ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isLoading ? 'Verifying...' : 'Continue'}
                 </button>
