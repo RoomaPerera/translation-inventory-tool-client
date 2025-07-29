@@ -1,9 +1,9 @@
 import React from "react";
 import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
 } from "react-router-dom";
 
 import { useAuthContext } from "./hooks/useAuthContext";
@@ -27,60 +27,60 @@ import ProjectDetails from './pages/ProjectDetails';
 import Analytics from './pages/Analytics';
 
 function PrivateRoute({ children }) {
-  const { user } = useAuthContext();
-  return user ? children : <Navigate to="/login" />;
+    const { user } = useAuthContext();
+    return user ? children : <Navigate to="/login" />;
 }
 function App() {
-  const { authReady } = useAuthContext();
+    const { authReady } = useAuthContext();
 
-  // Prevent route flicker while checking auth state
-  if (!authReady) {
+    // Prevent route flicker while checking auth state
+    if (!authReady) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <span className="text-xl text-gray-600">Loading...</span>
+            </div>
+        );
+    }
+
     return (
-      <div className="flex items-center justify-center h-screen">
-        <span className="text-xl text-gray-600">Loading...</span>
-      </div>
+        <Router>
+            <Routes>
+                {/* PUBLIC */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* PROTECTED */}
+                <Route element={<ProtectedLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/all-entries" element={<AllEntries />} />
+
+                    <Route
+                        path="/activity-log"
+                        element={
+                            <ActivityLogProvider>
+                                <ActivityLog />
+                            </ActivityLogProvider>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/anomalies"
+                        element={
+                            <PrivateRoute>
+                                <AdminAnomalyDashboard />
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route path="/settings" element={<Settings />} />
+                    {/* Redirect unmatched routes to home */}
+                    <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
+                    <Route path="/project-details" element={<ProjectDetails />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+            </Routes>
+        </Router>
     );
-  }
-
-  return (
-    <Router>
-      <Routes>
-        {/* PUBLIC */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-
-        {/* PROTECTED */}
-        <Route element={<ProtectedLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/all-entries" element={<AllEntries />} />
-
-          <Route
-            path="/activity-log"
-            element={
-              <ActivityLogProvider>
-                <ActivityLog />
-              </ActivityLogProvider>
-            }
-          />
-
-          <Route
-            path="/admin/anomalies"
-            element={
-              <PrivateRoute>
-                <AdminAnomalyDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          <Route path="/settings" element={<Settings />} />
-          {/* Redirect unmatched routes to home */}
-          <Route path="/settings/projects" element={<ProjectAndLanguageSettings />} />
-          <Route path="/project-details" element={<ProjectDetails />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
-  );
 }
 export default App;
