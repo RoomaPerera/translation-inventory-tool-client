@@ -9,10 +9,11 @@ import {
 import { useAuthContext } from "./hooks/useAuthContext";
 import ProtectedLayout from "./components/ProtectedLayout";
 
+
 // Public pages
 import Login from "./pages/login";
 import Register from "./pages/Register.jsx";
-
+import ForgotPassword from './pages/ForgotPassword.jsx';
 // Protected pages
 import Home from "./pages/Home";
 import AllEntries from "./pages/AllEntries";
@@ -48,12 +49,13 @@ function App() {
         {/* PUBLIC */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        
         {/* PROTECTED */}
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/all-entries" element={<AllEntries />} />
-
+          
           <Route
             path="/activity-log"
             element={

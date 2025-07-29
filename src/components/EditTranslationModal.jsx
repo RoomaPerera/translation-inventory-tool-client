@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */
+import  { useState, useEffect } from 'react';
 import useDebounce from '../hooks/useDebounce';
 import nlpService from '../services/nlpService';
 import translationService from '../services/translationService';
 import SuggestionPanel from './home/SuggestionPanel'; // <-- CORRECT IMPORT
 import '../styles/modal.css';
+import TranslationQualityCheck from './TranslationQualityCheck';
+import API from '../services/api'; // Ensure API is imported for axios instance
+
 
 const EditTranslationModal = ({ isOpen, onClose, onSave, translation, projects = [], currentUser }) => {
   const [formData, setFormData] = useState({});
@@ -15,6 +20,11 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation, projects =
   
   // State for tab navigation
   const [activeTab, setActiveTab] = useState("edit");
+
+    // Quality Check state
+  const [qualityCheckLoading, setQualityCheckLoading] = useState(false);
+  const [qualityCheckResult, setQualityCheckResult] = useState(null);
+  const [qualityCheckError, setQualityCheckError] = useState('');
 
   useEffect(() => {
     if (translation) {
@@ -51,6 +61,32 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation, projects =
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+    const runQualityCheck = async () => {
+    setQualityCheckError('');
+    setQualityCheckResult(null);
+    setQualityCheckLoading(true);
+    const user = localStorage.getItem('user');
+    console.log('Running quality check with user:', user);
+    const userData = user ? JSON.parse(user) : {};
+    const token = userData.token || '';
+    console.log('Running quality check with token:', token);
+    try {
+      const response = await API.post(
+        '/translations/quality-check',
+        {
+          inputText: formData.translationKey,
+          translatedText: formData.translatedText,
+          expectedTargetLanguage: translation?.language || ''
+        },
+      )
+      setQualityCheckResult(response.data);
+    } catch (err) {
+      setQualityCheckError(err.response?.data?.error || 'Quality check failed');
+    } finally {
+      setQualityCheckLoading(false);
+    }
   };
 
   const handleSuggestionClick = (text) => {
@@ -130,6 +166,19 @@ const EditTranslationModal = ({ isOpen, onClose, onSave, translation, projects =
                      <input type="text" value={formData.translationKey} readOnly className="w-full p-2 bg-gray-100 border-b-2 border-gray-300" />
                   </div>
                   <textarea name="translatedText" placeholder="Translated Text" rows="4" value={formData.translatedText} onChange={handleChange} className="w-full p-2 border-b-2 border-gray-300 focus:outline-none focus:border-brand-purple-base" required />
+
+
+
+                <TranslationQualityCheck
+                    translationKey={formData.translationKey}
+                    translatedText={formData.translatedText}
+                    onRunCheck={runQualityCheck}
+                    qualityCheckLoading={qualityCheckLoading}
+                    qualityCheckResult={qualityCheckResult}
+                    qualityCheckError={qualityCheckError}
+                />
+
+
                   {currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Developer') && (
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
