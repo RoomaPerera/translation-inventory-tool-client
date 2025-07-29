@@ -332,7 +332,7 @@ const handleCSVUpload = (e) => {
     try {
       console.log(`Importing ${formData.csvKeys.length} keys for ${formData.languages.length} languages...`);
       
-      // Use the primary CSV import method
+      // Use the primary CSV import method (server endpoint)
       const result = await translationService.importTranslationsFromCSV(
         formData.csvKeys,
         projectId,
@@ -477,7 +477,12 @@ const handleCSVUpload = (e) => {
       setSuccess(successMessage);
       resetForm();
       
-      // Navigate or trigger success callback after delay
+      // Dispatch custom event to notify other components (like Home page) about project creation
+      window.dispatchEvent(new CustomEvent('projectCreated', { 
+        detail: { project: result, hasCSVImport: formData.csvKeys.length > 0 } 
+      }));
+      
+      // Navigate or trigger success callback after delay to allow user to read the message
       setTimeout(() => {
         if (onSuccess) {
           onSuccess(result); // Pass the created project data
@@ -716,7 +721,12 @@ const handleCSVUpload = (e) => {
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
           />
           <div className="text-xs text-gray-500 mt-1">
-            Upload a CSV file containing translation keys. Max file size: 5MB
+            {/* Upload a CSV file containing translation keys. Max file size: 5MB
+            <br />
+            <strong>Supported formats:</strong> 
+            • Column format: one key per cell/row
+            • Inline format: "key1,key2,key3" (comma-separated in one cell)
+            • Mixed: combination of both formats */}
           </div>
           
           {/* Enhanced CSV Preview with detailed information */}
@@ -733,25 +743,23 @@ const handleCSVUpload = (e) => {
                 <strong>File:</strong> {formData.csvFile?.name}
               </div>
               
-              <div className="text-gray-600 mb-2">
-                <strong>Preview:</strong> {formData.csvKeys.slice(0, 5).join(', ')}
-                {formData.csvKeys.length > 5 && ` ... +${formData.csvKeys.length - 5} more`}
-              </div>
-              
               {formData.languages.length > 0 ? (
                 <div className="p-2 bg-blue-50 rounded text-blue-700 border border-blue-200">
-                  <div className="flex items-center mb-1">
+                  {/* <div className="flex items-center mb-1">
                     <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <strong>Ready to import!</strong>
-                  </div>
-                  <div>
+                  </div> */}
+                  {/* <div>
                     Will create <strong>{formData.csvKeys.length * formData.languages.length}</strong> translation entries
-                  </div>
-                  <div className="text-xs text-blue-600 mt-1">
+                  </div> */}
+                  {/* <div className="text-xs text-blue-600 mt-1">
                     ({formData.csvKeys.length} keys × {formData.languages.length} languages)
-                  </div>
+                  </div> */}
+                  {/* <div className="text-xs text-blue-600 mt-1">
+                    These will appear in the translation table on the Home page as "pending" status entries ready for translation.
+                  </div> */}
                 </div>
               ) : (
                 <div className="p-2 bg-orange-50 rounded text-orange-700 border border-orange-200">
@@ -763,6 +771,8 @@ const handleCSVUpload = (e) => {
                   </div>
                 </div>
               )}
+              {/* Add the preview table for key-language pairs */}
+             
             </div>
           )}
         </div>

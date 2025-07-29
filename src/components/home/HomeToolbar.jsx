@@ -1,12 +1,13 @@
-//import React from 'react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Button from '../reusableComponents/Button';
 import { Select } from '../reusableComponents/Select';
 import { useLanguages } from '../../hooks/useLanguages';
 
-const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => {
+const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation, onDownloadTranslations }) => {
     const { languages, loading: languagesLoading } = useLanguages();
-    
+    const [downloadFormat, setDownloadFormat] = useState('json'); // State for radio button selection
+    const [isDownloading, setIsDownloading] = useState(false);
+
     // Create dynamic language options from fetched languages
     const langOptions = [
         { value: '', label: 'All Languages' },
@@ -15,72 +16,107 @@ const HomeToolbar = ({ user, filters, onFilterChange, onAddNewTranslation }) => 
             label: `${lang.name} (${lang.code.toUpperCase()})`
         }))
     ];
+
     const showOptions = [
         { value: 'all', label: 'Show All Entries' },
         { value: 'pending', label: 'Pending Translations' },
         { value: 'approved', label: 'Approved Translations' }
     ];
+
     const typeOptions = [{ value: 'translations', label: 'Translations' }];
 
-    // Handle language selection
-    const handleLanguageSelect = (value) => {
-        console.log('HomeToolbar: Language selected:', value);
-        setSelectedLanguage(value);
-        if (onLanguageFilter) {
-            onLanguageFilter(value);
+    // Handle download button click
+    const handleDownload = async () => {
+        if (!filters.projectId) {
+            alert('Please select a project first.');
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            await onDownloadTranslations(downloadFormat, filters);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Failed to download translations. Please try again.');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
-  return (
-    <div className="flex items-center bg-white p-4 rounded-lg shadow-sm mb-5">
-      {/* Only show Add New Translation button for Admin and Developer */}
-      {user && (user.role === 'Admin' || user.role === 'Developer') && (
-        <Button
-          onClick={onAddNewTranslation}
-          className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2 !px-3 mr-4"
-        >
-          + Add new Translation
-        </Button>
-      )}
-      <div className="w-48 mr-4">
-        <Select 
-          options={showOptions} 
-          selected={filters.status || 'all'} 
-          onSelect={(value) => onFilterChange('status', value)} 
-        />
-      </div>
-      
-        <div className="w-48 mr-4">
-          <Select
-              options={languagesLoading ? [{ value: '', label: 'Loading languages...' }] : langOptions}
-              selected={filters.language}
-              onSelect={(value) => onFilterChange('language', value)}
-              disabled={languagesLoading}
-          />
+    return (
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg mb-4">
+            {/* Only show Add New Translation button for Admin and Developer */}
+            {user && (user.role === 'Admin' || user.role === 'Developer') && (
+                <Button
+                    onClick={onAddNewTranslation}
+                    className="bg-brand-purple-base hover:bg-brand-purple-dark text-white"
+                >
+                    + Add new Translation
+                </Button>
+            )}
+
+            <div className="flex flex-wrap items-center gap-4">
+                <Select
+                    options={typeOptions}
+                    value="translations"
+                    placeholder="Type"
+                    onChange={() => {}}
+                />
+
+                <Select
+                    options={showOptions}
+                    value={filters.status}
+                    placeholder="Show"
+                    onChange={(value) => onFilterChange('status', value)}
+                />
+
+                <Select
+                    options={langOptions}
+                    value={filters.language}
+                    placeholder="Language"
+                    onChange={(value) => onFilterChange('language', value)}
+                    disabled={languagesLoading}
+                />
+
+                {/* Only show Download button and JSON/CSV radio buttons for Admin and Developer */}
+                {user && (user.role === 'Admin' || user.role === 'Developer') && (
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="downloadFormat"
+                                    value="json"
+                                    checked={downloadFormat === 'json'}
+                                    onChange={(e) => setDownloadFormat(e.target.value)}
+                                    className="text-brand-purple-base"
+                                />
+                                <span className="text-sm">JSON</span>
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="downloadFormat"
+                                    value="csv"
+                                    checked={downloadFormat === 'csv'}
+                                    onChange={(e) => setDownloadFormat(e.target.value)}
+                                    className="text-brand-purple-base"
+                                />
+                                <span className="text-sm">CSV</span>
+                            </label>
+                        </div>
+                        <Button
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {isDownloading ? 'Downloading...' : 'Download'}
+                        </Button>
+                    </div>
+                )}
+            </div>
         </div>
-      
-      
-      
-      {/* Only show Language dropdown for Admin and Developer 
-      {user && (user.role === 'Admin' || user.role === 'Developer') && (
-        <div className="w-48 mr-4">
-          <Select options={typeOptions} selected={'translations'} onSelect={() => {}} />
-        </div> )} */}
-      
-      {/* Only show Download button and JSON/CSV radio buttons for Admin and Developer */}
-      {user && (user.role === 'Admin' || user.role === 'Developer') && (
-        <div className="flex items-center ml-auto">
-          <input type="radio" id="json" name="format" value="JSON" className="mr-1.5 h-4 w-4" />
-          <label htmlFor="json" className="mr-4 text-sm">JSON</label>
-          <input type="radio" id="csv" name="format" value="CSV" className="mr-1.5 h-4 w-4" />
-          <label htmlFor="csv" className="mr-4 text-sm">CSV</label>
-          <Button className="bg-gray-100 !text-gray-800 border border-gray-300 hover:bg-gray-200 !py-2 !px-3">
-            Download
-          </Button>
-        </div> 
-      )} 
-    </div>
-  );
+    );
 };
 
 export default HomeToolbar;
