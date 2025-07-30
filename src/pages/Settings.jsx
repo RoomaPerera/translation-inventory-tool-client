@@ -11,6 +11,8 @@ const Settings = () => {
 
     // Check if user has permission for Project & Language Management
     const hasManagementAccess = user && (user.role === 'Admin');
+    // Check if user has admin access for user management
+    const isAdmin = user && user.role === 'Admin';
 
     return (
         <main className="flex-grow p-5 bg-brand-bg-main min-h-screen">
@@ -40,6 +42,20 @@ const Settings = () => {
                             onClick={() => setActiveTab('management')}
                         >
                             Project & Language Management
+                        </button>
+                    )}
+
+                    {/* Add User Management tab for Admins */}
+                    {isAdmin && (
+                        <button
+                            className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
+                                activeTab === 'users'
+                                    ? 'text-indigo-700 border-indigo-700 bg-white'
+                                    : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            User Management
                         </button>
                     )}
                 </div>
@@ -130,7 +146,7 @@ const Settings = () => {
                     </div>
                 )}
 
-                {/* Access Denied Message for non-privileged users */}
+                {/* Project & Language Management Access Denied */}
                 {activeTab === 'management' && !hasManagementAccess && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="text-center py-8">
@@ -141,7 +157,35 @@ const Settings = () => {
                             </div>
                             <h3 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h3>
                             <p className="text-gray-600">
-                                Project & Language Management is only available for Admin and Developer roles.
+                                Project & Language Management is only available for Admin roles.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Admin-only User Management Section */}
+                {activeTab === 'users' && isAdmin && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h2 className="text-xl font-semibold mb-4">User Management</h2>
+                        <p className="text-gray-600 mb-6">
+                            Manage user accounts, roles, and permissions.
+                        </p>
+                        <UserSettings />
+                    </div>
+                )}
+
+                {/* User Management Access Denied */}
+                {activeTab === 'users' && !isAdmin && (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="text-center py-8">
+                            <div className="text-red-500 mb-4">
+                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h3>
+                            <p className="text-gray-600">
+                                User Management is only available for Admin users.
                             </p>
                         </div>
                     </div>

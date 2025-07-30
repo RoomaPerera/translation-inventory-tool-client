@@ -1,6 +1,6 @@
 // src/hooks/useCollaboration.js
 import { useState, useEffect, useRef, useCallback } from 'react';
-//import io from 'socket.io-client';
+import io from 'socket.io-client';
 
 export const useCollaboration = ({
     translationId,

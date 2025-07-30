@@ -4,7 +4,7 @@ import GTNPortal from '../components/reusableComponents/GTNPortal';
 import Button from '../components/reusableComponents/Button';
 import ResultCard from '../components/ResultCard';
 import FileUpload from '../components/FileUpload';
-import API from '../api/api';
+import API from '../services/api';
 
 const ReadabilityValidator = () => {
   const [user, setUser] = useState(null);
