@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Download, RefreshCw, TrendingUp, TrendingDown, Clock, Users, FileText, AlertCircle } from 'lucide-react';
+import { Download, RefreshCw, TrendingUp, TrendingDown, Clock, Users, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import analyticsService from '../services/analyticsService';
 
 const Analytics = () => {
@@ -10,6 +10,8 @@ const Analytics = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(null);
 
   // Fetch dashboard data
   const fetchDashboardData = async (timeRange) => {
@@ -41,13 +43,25 @@ const Analytics = () => {
     }
   };
 
-  // Export report
+  // Export report with enhanced feedback
   const exportReport = async (format) => {
+    setExportLoading(true);
+    setExportSuccess(null);
+    setError(null);
+    
     try {
-      await analyticsService.exportDashboardData(format, selectedTimeRange);
+      const result = await analyticsService.exportDashboardData(format, selectedTimeRange);
+      setExportSuccess(`${format.toUpperCase()} file downloaded successfully!`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setExportSuccess(null);
+      }, 3000);
     } catch (error) {
       console.error('Export failed:', error);
       setError(`Failed to export as ${format.toUpperCase()}. Please try again.`);
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -64,7 +78,7 @@ const Analytics = () => {
   }
 
   // Error state
-  if (error) {
+  if (error && !dashboardData) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -121,7 +135,6 @@ const Analytics = () => {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Translation Analytics Dashboard</h1>
-              <p className="text-gray-600">Monitor KPIs and project performance</p>
             </div>
             <div className="flex items-center space-x-4">
               <select
@@ -142,29 +155,30 @@ const Analytics = () => {
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </button>
+              
+              {/* Enhanced Export Dropdown */}
               <div className="relative group">
-                <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
+                <button 
+                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                  disabled={exportLoading}
+                >
+                  <Download className={`w-4 h-4 mr-2 ${exportLoading ? 'animate-pulse' : ''}`} />
+                  {exportLoading ? 'Exporting...' : 'Export'}
                 </button>
                 
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="py-2">
                     <button
-                      onClick={() => exportReport('pdf')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => exportReport('csv')}
+                      disabled={exportLoading}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Export as PDF
-                    </button>
-                    <button
-                      onClick={() => exportReport('excel')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Export as Excel
+                      Export as CSV
                     </button>
                     <button
                       onClick={() => exportReport('json')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      disabled={exportLoading}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Export as JSON
                     </button>
@@ -177,6 +191,22 @@ const Analytics = () => {
             Last updated: {lastUpdated.toLocaleString()}
           </p>
         </div>
+
+        {/* Success Banner */}
+        {exportSuccess && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+              <p className="text-green-700">{exportSuccess}</p>
+              <button
+                onClick={() => setExportSuccess(null)}
+                className="ml-auto text-green-600 hover:text-green-800"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Error Banner */}
         {error && (
@@ -196,30 +226,6 @@ const Analytics = () => {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Quality Score</p>
-                <p className="text-2xl font-bold text-gray-900">{kpis?.averageQualityScore || 'N/A'}</p>
-                {kpis?.qualityTrend && (
-                  <div className="flex items-center mt-1">
-                    {kpis.qualityTrend > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className={`text-sm ml-1 ${kpis.qualityTrend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {kpis.qualityTrend > 0 ? '+' : ''}{kpis.qualityTrend}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span className="text-yellow-600 text-lg">⭐</span>
-              </div>
-            </div>
-          </div>
-
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -247,7 +253,7 @@ const Analytics = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Productivity</p>
                 <p className="text-2xl font-bold text-gray-900">{kpis?.translatorProductivity || 'N/A'}</p>
-                <p className="text-xs text-gray-500 mt-1">words/day</p>
+                <p className="text-xs text-gray-500 mt-1">translations/day</p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-500" />
             </div>
@@ -280,12 +286,17 @@ const Analytics = () => {
             </div>
           </div>
 
+          {/* Updated Total Translations Card */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Words</p>
+                <p className="text-sm font-medium text-gray-600">Total Translations</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {kpis?.totalWords && kpis.totalWords !== 'N/A' ? `${(kpis.totalWords / 1000).toFixed(0)}K` : 'N/A'}
+                  {kpis?.totalTranslations && kpis.totalTranslations !== 'N/A' 
+                    ? (kpis.totalTranslations > 1000 
+                      ? `${(kpis.totalTranslations / 1000).toFixed(1)}K` 
+                      : kpis.totalTranslations) 
+                    : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">this period</p>
               </div>
@@ -294,49 +305,11 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Quality Trend */}
-          {qualityTrend && qualityTrend.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quality Score Trend</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={qualityTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
-                  <YAxis domain={[0, 10]} />
-                  <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                    formatter={(value, name) => [value, name === 'score' ? 'Quality Score' : 'Projects']}
-                  />
-                  <Area type="monotone" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Processing Times */}
-          {processingTimes && processingTimes.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Times by Translator</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={processingTimes} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="translator" type="category" width={120} />
-                  <Tooltip formatter={(value) => [`${value}h`, 'Avg Processing Time']} />
-                  <Bar dataKey="avgTime" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Productivity Trend */}
+          {/* Updated Productivity Chart - Now shows translations */}
           {productivity && productivity.length > 0 && (
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Productivity (Words)</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Productivity (Translations)</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={productivity}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -344,9 +317,9 @@ const Analytics = () => {
                   <YAxis />
                   <Tooltip 
                     labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                    formatter={(value) => [`${value} words`, 'Daily Average']}
+                    formatter={(value) => [`${value} translations`, 'Daily Average']}
                   />
-                  <Line type="monotone" dataKey="words" stroke="#f59e0b" strokeWidth={3} />
+                  <Line type="monotone" dataKey="translations" stroke="#f59e0b" strokeWidth={3} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -378,45 +351,6 @@ const Analytics = () => {
             </div>
           )}
         </div>
-
-        {/* Detailed Table */}
-        {processingTimes && processingTimes.length > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Translator Performance Details</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Translator</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Time (h)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {processingTimes.map((translator, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{translator.translator}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{translator.avgTime}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{translator.completed}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          translator.avgTime < 2.0 ? 'bg-green-100 text-green-800' :
-                          translator.avgTime < 2.5 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {translator.avgTime < 2.0 ? 'High' : translator.avgTime < 2.5 ? 'Medium' : 'Low'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
