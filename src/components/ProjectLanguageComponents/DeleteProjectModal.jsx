@@ -126,14 +126,14 @@ const DeleteProjectModal = ({ project, onSuccess, onCancel }) => {
       </div>
 
       {/* Additional Warning */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+      {/* <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
         <div className="flex items-start space-x-2">
           <span className="text-yellow-600 text-sm">💡</span>
           <p className="text-yellow-800 text-xs">
             <strong>Alternative:</strong> Consider archiving this project instead of deleting it permanently if you might need it in the future.
           </p>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
