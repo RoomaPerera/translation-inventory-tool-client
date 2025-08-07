@@ -1,5 +1,6 @@
 import React from "react";
 import { SearchInput } from "../reusableComponents/SearchInput";
+import FuzzySearchInput from "../reusableComponents/FuzzySearchInput";
 import Button from "../reusableComponents/Button";
 import { Select } from "../reusableComponents/Select";
 
@@ -46,10 +47,15 @@ const HomeHeader = ({
           />
         </div>
         <div className="w-64">
-          <SearchInput
+          <FuzzySearchInput
             placeholder="Search by Key..."
-            value={searchTerm}
-            onChange={onSearchChange}
+            searchType="key"
+            onQueryChange={(value) => onSearchChange({ target: { value } })}
+            onResultSelect={(result) => {
+              // When a fuzzy search result is selected, set the search to the key
+              onSearchChange({ target: { value: result.translationKey } });
+            }}
+            className="w-full"
           />
         </div>
       </div>

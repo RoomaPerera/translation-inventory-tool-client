@@ -1,41 +1,41 @@
 import API from './axiosInstance';
 
-// 🔹 Get all projects
+// Get all projects
 const getProjects = () => API.get('/projects');
 
-// 🔹 Get project by ID
+//  Get project by ID
 const getProjectById = (id) => API.get(`/projects/${id}`);
 
-// 🔹 Create new project
+//  Create new project
 const addProject = (projectData) => API.post('/projects', projectData);
 
-// 🔹 Update project
+//  Update project
 const updateProject = (id, projectData) => API.put(`/projects/${id}`, projectData);
 
-// 🔹 Delete project
+//  Delete project
 const deleteProject = (id) => API.delete(`/projects/${id}`);
 
-// 🔹 Assign multiple languages to a project
+//  Assign multiple languages to a project
 const assignLanguagesToProject = (projectId, languages) => 
   API.post(`/projects/${projectId}/languages`, { languages });
 
-// 🔹 Get languages assigned to a project
+//  Get languages assigned to a project
 const getProjectLanguages = (projectId) => 
   API.get(`/projects/${projectId}/languages`);
 
-// 🔹 Set default language for a project
+//  Set default language for a project
 const setProjectDefaultLanguage = (projectId, languageId) => 
   API.put(`/projects/${projectId}/default-language`, { languageId });
 
-// 🔹 Get default language for a project
+//  Get default language for a project
 const getProjectDefaultLanguage = (projectId) => 
   API.get(`/projects/${projectId}/default-language`);
 
-// 🔹 Remove default language from a project
+//  Remove default language from a project
 const removeProjectDefaultLanguage = (projectId) => 
   API.delete(`/projects/${projectId}/default-language`);
 
-// 🔹 Test API connection
+//  Test API connection
 const testConnection = () => API.get('/test');
 
 const projectService = {

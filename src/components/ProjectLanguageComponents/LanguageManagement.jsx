@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import FuzzySearchInput from '../reusableComponents/FuzzySearchInput';
 
 const DeleteLanguageModal = ({ language, isOpen, onClose, onConfirm, isDeleting }) => {
   if (!isOpen || !language) return null;
@@ -132,13 +133,19 @@ const LanguageManagement = ({ languages, isLoadingLanguages, onAddLanguage, onDe
                   <span className="text-sm text-gray-500 ml-2">({languages.length} total)</span>
                 )}
               </h3>
-              <input 
-                type="text"
-                placeholder="Search languages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <div className="w-64">
+                <FuzzySearchInput
+                  placeholder="Search languages..."
+                  searchType="language"
+                  onQueryChange={(value) => setSearchTerm(value)}
+                  onResultSelect={(result) => {
+                    // When a fuzzy search result is selected, set the search term to the language value
+                    setSearchTerm(result.displayValue || result.language || result.matchedField);
+                  }}
+                  className="w-full"
+                  
+                />
+              </div>
             </div>
 
             {isLoadingLanguages ? (

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
 import projectService from '../services/projectService';
 import languageService from '../services/languageService';
+import FuzzySearchInput from '../components/reusableComponents/FuzzySearchInput';
 
 // Import components
 import ProjectCard from '../components/ProjectLanguageComponents/ProjectCard';
@@ -150,7 +151,7 @@ const ProjectDetails = () => {
     setProjects(projects.filter(project => project._id !== projectId));
     setShowDeleteModal(false);
     setProjectToDelete(null);
-    showNotification('✅ Project deleted successfully!', 'success');
+    showNotification('Project deleted successfully!', 'success');
   };
 
   const handleCancelDelete = () => {
@@ -303,17 +304,15 @@ const ProjectDetails = () => {
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 flex-1 lg:max-w-2xl">
               {/* Search */}
               <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
+                <FuzzySearchInput
                   placeholder="Search projects..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 backdrop-blur-sm"
+                  searchType="project"
+                  onQueryChange={(value) => setSearchTerm(value)}
+                  onResultSelect={(result) => {
+                    // When a fuzzy search result is selected, set the search term to the project name
+                    setSearchTerm(result.displayValue || result.product || result.matchedField);
+                  }}
+                  className="w-full"
                 />
               </div>
 
