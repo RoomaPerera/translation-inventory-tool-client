@@ -453,34 +453,34 @@ const ProjectAndLanguageSettings = () => {
 
   // Simple Project Overview Component
   const ProjectOverview = () => (
-    <div className="animate-fade-in">
-      <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50">
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse flex-shrink-0"></div>
-          <h1 className="text-lg sm:text-xl font-semibold text-black-800">Project Overview</h1>
+    <div>
+      <div className="mb-6 p-6 bg-white rounded-lg border border-gray-200">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <h1 className="text-xl font-semibold text-gray-800">Project Overview</h1>
         </div>
-        <p className="text-black-600/80 text">
+        <p className="text-gray-600">
           Manage your translation projects and access detailed project information
         </p>
       </div>
       
-      <div className="grid gap-4 sm:gap-6">
+      <div className="grid gap-6">
         {/* Add Project Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-slate-800 flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span>Create New Project</span>
               </h3>
-              <p className="text-slate-600">Start a new translation project with custom settings</p>
+              <p className="text-gray-600">Start a new translation project with custom settings</p>
             </div>
             <button
               onClick={handleAddProject}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:shadow-lg hover:scale-105 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <span className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>Add Project</span>
@@ -490,19 +490,19 @@ const ProjectAndLanguageSettings = () => {
         </div>
 
         {/* Your Projects Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-slate-800 flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"></div>
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                 <span>Your Projects</span>
               </h3>
-              <p className="text-slate-600">
+              <p className="text-gray-600">
                 View and manage all your projects ({stats.totalProjects} total)
               </p>
               {stats.totalProjects > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded-lg text-xs font-medium">
+                  <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">
                     {stats.projectsWithLanguages} Active
                   </span>
                 </div>
@@ -511,10 +511,10 @@ const ProjectAndLanguageSettings = () => {
             <button
               onClick={handleViewProjectDetails}
               disabled={isLoadingProjects}
-              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-medium hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:shadow-lg hover:scale-105 transform focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-teal-600 text-white rounded-md font-medium hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
                 <span>{isLoadingProjects ? 'Loading...' : 'View Projects'}</span>
@@ -525,23 +525,23 @@ const ProjectAndLanguageSettings = () => {
 
         {/* Quick Stats */}
         {stats.totalProjects > 0 && (
-          <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl sm:rounded-2xl border border-slate-200/60 p-6 sm:p-8">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center space-x-2">
-              <div className="w-3 h-3 bg-gradient-to-r from-slate-500 to-blue-500 rounded-full"></div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
               <span>Project Statistics</span>
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalProjects}</div>
-                <div className="text-sm text-slate-600">Total Projects</div>
+                <div className="text-2xl font-bold text-indigo-600">{stats.totalProjects}</div>
+                <div className="text-sm text-gray-600">Total Projects</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-teal-600">{stats.projectsWithLanguages}</div>
-                <div className="text-sm text-slate-600">With Languages</div>
+                <div className="text-sm text-gray-600">With Languages</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">{stats.totalLanguages}</div>
-                <div className="text-sm text-slate-600">Available Languages</div>
+                <div className="text-2xl font-bold text-blue-600">{stats.totalLanguages}</div>
+                <div className="text-sm text-gray-600">Available Languages</div>
               </div>
             </div>
           </div>
@@ -553,10 +553,10 @@ const ProjectAndLanguageSettings = () => {
   // FIXED: Added user check for early return
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-slate-800">Please log in to access this page</h2>
-          <p className="text-slate-600">You need to be logged in to manage projects and languages.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Please log in to access this page</h2>
+          <p className="text-gray-600">You need to be logged in to manage projects and languages.</p>
         </div>
       </div>
     );
@@ -564,63 +564,50 @@ const ProjectAndLanguageSettings = () => {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-slate-200 rounded-full animate-spin border-t-blue-600"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-transparent rounded-full animate-ping border-t-indigo-400"></div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-slate-800 animate-pulse">Loading</h2>
-          </div>
-          <div className="flex space-x-1 justify-center">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              ></div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin border-t-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800">Loading...</h2>
+          <p className="text-gray-600">Please wait while we load your data.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Simplified Responsive Header Section */}
-      <div className="bg-white/90 backdrop-blur-lg border-b border-slate-200/60 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Enhanced Tab Navigation */}
-          <div className="relative overflow-x-auto">
+          <div className="overflow-x-auto">
             <TabNavigation 
               activeTab={activeTab} 
               setActiveTab={handleTabChange}
-              className="transform transition-all duration-500 min-w-max sm:min-w-0"
+              className="min-w-max sm:min-w-0"
             />
           </div>
         </div>
       </div>
 
-      {/* Enhanced Responsive Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="transition-all duration-500 ease-in-out">
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div>
           {activeTab === 'projects' && <ProjectOverview />}
           
           {activeTab === 'languages' && (
-            <div className="animate-fade-in">
-              <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-indigo-200/50">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse flex-shrink-0"></div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-black-800">Language Management</h2>
+            <div>
+              <div className="mb-6 p-6 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                  <h2 className="text-xl font-semibold text-gray-800">Language Management</h2>
                 </div>
-                <p className="text-black-600/80 text-sm">
+                <p className="text-gray-600">
                   Add and configure supported languages for your projects
                 </p>
               </div>
               
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-6">
                 <LanguageManagement
                   languages={Array.isArray(languages) ? languages : []}
                   isLoadingLanguages={isLoadingLanguages}
@@ -634,34 +621,34 @@ const ProjectAndLanguageSettings = () => {
         </div>
       </div>
       
-      {/* Enhanced Responsive Modal with backdrop blur */}
+      {/* Modal */}
       <Modal
         isOpen={showAddForm || showAddLanguageForm || showEditForm || showEditLanguageForm || showDeleteModal}
         onClose={closeModal}
         title={getModalTitle()}
-        className="backdrop-blur-xl bg-white/96 mx-4 sm:mx-0 border border-slate-200/50"
+        className="bg-white mx-4 sm:mx-0 border border-gray-200"
       >
-        <div className="animate-modal-content">
+        <div>
           {renderModalContent()}
         </div>
       </Modal>
 
-      {/* Enhanced Responsive Notification System */}
-      <div className="fixed top-4 right-2 sm:right-4 z-50 space-y-2 max-w-xs sm:max-w-sm">
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className={`px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl shadow-lg border backdrop-blur-lg transform transition-all duration-500 animate-slide-in-right text-sm sm:text-base ${
+            className={`px-4 py-3 rounded-lg shadow-lg border text-sm ${
               notification.type === 'success' 
-                ? 'bg-teal-50/95 border-teal-200 text-teal-800' 
+                ? 'bg-green-50 border-green-200 text-green-800' 
                 : notification.type === 'error'
-                ? 'bg-red-50/95 border-red-200 text-red-800'
-                : 'bg-blue-50/95 border-blue-200 text-blue-800'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
             }`}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                notification.type === 'success' ? 'bg-teal-500' :
+                notification.type === 'success' ? 'bg-green-500' :
                 notification.type === 'error' ? 'bg-red-500' :
                 'bg-blue-500'
               }`}></div>
@@ -671,68 +658,6 @@ const ProjectAndLanguageSettings = () => {
         ))}
       </div>
 
-      {/* Responsive Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slide-in-right {
-          from { opacity: 0; transform: translateX(100px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        
-        @media (max-width: 640px) {
-          @keyframes slide-in-right {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-        }
-        
-        @keyframes modal-content {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
-        }
-        
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out;
-        }
-        
-        .animate-modal-content {
-          animation: modal-content 0.3s ease-out;
-        }
-        
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-          .animate-fade-in {
-            animation: fade-in 0.4s ease-out;
-          }
-        }
-        
-        /* Smooth scrolling for tab navigation */
-        .overflow-x-auto {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        .overflow-x-auto::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 };

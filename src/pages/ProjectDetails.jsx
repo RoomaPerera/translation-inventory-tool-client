@@ -217,77 +217,63 @@ const ProjectDetails = () => {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-slate-200 rounded-full animate-spin border-t-blue-600"></div>
-            <div className="absolute inset-0 w-20 h-20 border-4 border-transparent rounded-full animate-ping border-t-indigo-400"></div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-slate-800 animate-pulse">Loading Projects</h2>
-            <p className="text-slate-600">Getting your project details...</p>
-          </div>
-          <div className="flex space-x-1 justify-center">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              ></div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin border-t-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Projects</h2>
+          <p className="text-gray-600">Getting your project details...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-white/90 backdrop-blur-lg border-b border-slate-200/60 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             {/* Title and Navigation */}
             <div className="flex items-center space-x-4 mb-4 lg:mb-0">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200"
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                 title="Go Back"
               >
-                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Project Details</h1>
-                <p className="text-slate-600 mt-1">Manage and organize your translation projects</p>
+                <h1 className="text-2xl font-semibold text-gray-800">Project Details</h1>
+                <p className="text-gray-600 mt-1">Manage and organize your translation projects</p>
               </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 hover:shadow-md transition-shadow duration-200">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-blue-800">{stats.total}</div>
+                  <div className="text-xl font-semibold text-blue-800">{stats.total}</div>
                   <div className="text-xs text-blue-600">Total</div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-3 rounded-lg border border-teal-200 hover:shadow-md transition-all duration-300">
+              <div className="bg-teal-50 p-3 rounded-lg border border-teal-200 hover:shadow-md transition-shadow duration-200">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-teal-800">{stats.withLanguages}</div>
+                  <div className="text-xl font-semibold text-teal-800">{stats.withLanguages}</div>
                   <div className="text-xs text-teal-600">Active</div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg border border-amber-200 hover:shadow-md transition-all duration-300">
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 hover:shadow-md transition-shadow duration-200">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-amber-800">{stats.withoutLanguages}</div>
+                  <div className="text-xl font-semibold text-amber-800">{stats.withoutLanguages}</div>
                   <div className="text-xs text-amber-600">Pending</div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-3 rounded-lg border border-slate-300 hover:shadow-md transition-all duration-300">
+              <div className="bg-gray-100 p-3 rounded-lg border border-gray-300 hover:shadow-md transition-shadow duration-200">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-slate-800">{stats.filtered}</div>
-                  <div className="text-xs text-slate-600">Showing</div>
+                  <div className="text-xl font-semibold text-gray-800">{stats.filtered}</div>
+                  <div className="text-xs text-gray-600">Showing</div>
                 </div>
               </div>
             </div>
@@ -296,9 +282,9 @@ const ProjectDetails = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Action Bar */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 p-4 sm:p-6 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 flex-1 lg:max-w-2xl">
@@ -320,7 +306,7 @@ const ProjectDetails = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 backdrop-blur-sm"
+                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -333,7 +319,7 @@ const ProjectDetails = () => {
               <select
                 value={filterBy}
                 onChange={(e) => setFilterBy(e.target.value)}
-                className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 backdrop-blur-sm"
+                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
               >
                 <option value="all">All Projects</option>
                 <option value="with-languages">With Languages</option>
@@ -344,10 +330,10 @@ const ProjectDetails = () => {
             {/* Add Project Button */}
             <button
               onClick={handleAddProject}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <span className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>Add Project</span>
@@ -357,9 +343,9 @@ const ProjectDetails = () => {
 
           {/* Active filters indicator */}
           {(searchTerm || filterBy !== 'all' || sortBy !== 'newest') && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-slate-600">Active filters:</span>
+                <span className="text-sm text-gray-600">Active filters:</span>
                 {searchTerm && (
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     Search: "{searchTerm}"
@@ -383,11 +369,11 @@ const ProjectDetails = () => {
                   </span>
                 )}
                 {sortBy !== 'newest' && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                     Sort: {sortBy.replace('-', ' ')}
                     <button
                       onClick={() => setSortBy('newest')}
-                      className="ml-1 text-slate-600 hover:text-slate-800"
+                      className="ml-1 text-gray-600 hover:text-gray-800"
                     >
                       ×
                     </button>
@@ -399,7 +385,7 @@ const ProjectDetails = () => {
                     setFilterBy('all');
                     setSortBy('newest');
                   }}
-                  className="text-sm text-slate-500 hover:text-slate-700 underline"
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
                 >
                   Clear all
                 </button>
@@ -409,27 +395,27 @@ const ProjectDetails = () => {
         </div>
 
         {/* Projects Grid */}
-        <div className="animate-fade-in">
+        <div>
           {isLoadingProjects ? (
             <div className="flex justify-center py-16">
-              <div className="text-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
-                <p className="text-slate-600">Loading projects...</p>
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-gray-300 rounded-full animate-spin border-t-indigo-600 mx-auto mb-3"></div>
+                <p className="text-gray-600">Loading projects...</p>
               </div>
             </div>
           ) : filteredProjects.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredProjects.map((project) => (
-                <div key={project._id} className="transform transition-all duration-300 hover:scale-[1.02]">
+                <div key={project._id} className="hover:shadow-md transition-shadow duration-200">
                   <ProjectCard
                     project={project}
                     onEdit={handleEditProject}
                     onDelete={handleDeleteProject}
-                    bgColor="bg-white/80"
-                    borderColor="border-slate-200/60"
-                    textColor="text-slate-800"
-                    editButtonColor="bg-blue-600"
-                    editButtonHoverColor="hover:bg-blue-700"
+                    bgColor="bg-white"
+                    borderColor="border-gray-200"
+                    textColor="text-gray-800"
+                    editButtonColor="bg-indigo-600"
+                    editButtonHoverColor="hover:bg-indigo-700"
                     deleteButtonColor="bg-red-600"
                     deleteButtonHoverColor="hover:bg-red-700"
                   />
@@ -437,15 +423,15 @@ const ProjectDetails = () => {
               ))}
             </div>
           ) : (
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-slate-300 p-12 text-center">
+            <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
               <div className="max-w-md mx-auto">
-                <svg className="mx-auto h-16 w-16 text-slate-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="mx-auto h-16 w-16 text-gray-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">
                   {searchTerm || filterBy !== 'all' ? 'No projects match your criteria' : 'No projects yet'}
                 </h3>
-                <p className="text-slate-600 mb-6">
+                <p className="text-gray-600 mb-6">
                   {searchTerm || filterBy !== 'all' 
                     ? 'Try adjusting your search terms or filters to find what you\'re looking for.'
                     : 'Get started by creating your first translation project!'
@@ -454,9 +440,9 @@ const ProjectDetails = () => {
                 {(!searchTerm && filterBy === 'all') && (
                   <button 
                     onClick={handleAddProject}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                    className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Create Your First Project
@@ -473,29 +459,29 @@ const ProjectDetails = () => {
         isOpen={showAddForm || showEditForm || showDeleteModal}
         onClose={closeModal}
         title={getModalTitle()}
-        className="backdrop-blur-xl bg-white/96 mx-4 sm:mx-0 border border-slate-200/50"
+        className="bg-white mx-4 sm:mx-0 border border-gray-200"
       >
-        <div className="animate-modal-content">
+        <div>
           {renderModalContent()}
         </div>
       </Modal>
 
       {/* Notifications */}
-      <div className="fixed top-4 right-2 sm:right-4 z-50 space-y-2 max-w-xs sm:max-w-sm">
+      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className={`px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl shadow-lg border backdrop-blur-lg transform transition-all duration-500 animate-slide-in-right text-sm sm:text-base ${
+            className={`px-4 py-3 rounded-lg shadow-lg border text-sm ${
               notification.type === 'success' 
-                ? 'bg-teal-50/95 border-teal-200 text-teal-800' 
+                ? 'bg-green-50 border-green-200 text-green-800' 
                 : notification.type === 'error'
-                ? 'bg-red-50/95 border-red-200 text-red-800'
-                : 'bg-blue-50/95 border-blue-200 text-blue-800'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
             }`}
           >
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                notification.type === 'success' ? 'bg-teal-500' :
+                notification.type === 'success' ? 'bg-green-500' :
                 notification.type === 'error' ? 'bg-red-500' :
                 'bg-blue-500'
               }`}></div>
@@ -504,47 +490,6 @@ const ProjectDetails = () => {
           </div>
         ))}
       </div>
-
-      {/* Custom Styles */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slide-in-right {
-          from { opacity: 0; transform: translateX(100px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        
-        @keyframes modal-content {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
-        }
-        
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out;
-        }
-        
-        .animate-modal-content {
-          animation: modal-content 0.3s ease-out;
-        }
-        
-        @media (max-width: 640px) {
-          .animate-fade-in {
-            animation: fade-in 0.4s ease-out;
-          }
-          
-          @keyframes slide-in-right {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-        }
-      `}</style>
     </div>
   );
 };
