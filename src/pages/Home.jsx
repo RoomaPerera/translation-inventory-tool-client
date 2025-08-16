@@ -10,37 +10,63 @@ import AssignProjectLanguageModal from "../components/AssignProjectLanguageModal
 import { Pagination } from "../components/reusableComponents/Pagination";
 import useDebounce from "../hooks/useDebounce";
 import translationService from "../services/translationService";
+import projectService from "../services/projectService";
 import API from "../services/axiosInstance";
-import ConfirmModal from "../components/UserListComponents/ConfirmModal";
+import ConfirmModal from "../components/UserListComponents/ConfirmModal"; // <-- 1. Import the ConfirmModal
+import ErrorBoundary from '../components/ErrorBoundary';
 
-const Home = () => {
-  const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const [translations, setTranslations] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [paginationData, setPaginationData] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    key: "",
-    language: "",
-    projectId: "",
-    status: "all",
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const debouncedSearchTerm = useDebounce(filters.key, 500);
+const HomeContent = () => {
+    const navigate = useNavigate();
+    const { user } = useAuthContext();
+    const [translations, setTranslations] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [paginationData, setPaginationData] = useState({
+
+        currentPage: 1,
+
+        totalPages: 1,
+
+        totalItems: 0,
+
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [filters, setFilters] = useState({
+        key: "",
+        language: "",
+        projectId: "",
+        status: "all",
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const debouncedSearchTerm = useDebounce(filters.key, 500);
+    const [retryCount, setRetryCount] = useState(0);
 
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isLangModalOpen, setLangModalOpen] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Listen for project creation events (including CSV imports)
+
+    // --- 2. State to manage the delete confirmation modal ---
+    const [deleteTarget, setDeleteTarget] = useState(null); // Will hold the translation object to delete
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const response = await projectService.getProjects();
+                setProjects(response.data);
+                if (response.data.length > 0) {
+                    setFilters((prev) => ({ ...prev, projectId: response.data[0]._id }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch projects", err);
+                setError("Could not load projects. Please try again later.");
+            }
+        };
+        fetchProjects();
+    }, []);
+
+    // Listen for project creation events (including CSV imports)
   useEffect(() => {
     const handleProjectCreated = (event) => {
       const { project, hasCSVImport } = event.detail;
@@ -85,88 +111,77 @@ const Home = () => {
   useEffect(() => {
     fetchProjects();
   }, []);
+    
 
-  const fetchTranslations = useCallback(async () => {
-    if (!filters.projectId) {
-      setLoading(false);
-      setTranslations([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      console.log('Fetching translations with filters:', {
-        projectId: filters.projectId,
-        language: filters.language,
-        status: filters.status,
-        key: debouncedSearchTerm,
-        page: currentPage
-      });
-
-      const response = await translationService.getTranslations(
-        currentPage,
-        10,
-        {
-          key: debouncedSearchTerm,
-          language: filters.language,
-          projectId: filters.projectId,
-          status: filters.status !== "all" ? filters.status : undefined,
+    const fetchTranslations = useCallback(async () => {
+        if (!filters.projectId) {
+            setLoading(false);
+            setTranslations([]);
+            return;
         }
-      );
-      
-      console.log('Translations fetched:', response.data);
-      
-      setTranslations(response.data.translations);
-      setPaginationData({
-        currentPage: response.data.currentPage,
-        totalPages: response.data.totalPages,
-        totalItems: response.data.totalItems,
-      });
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching translations:", err);
-      setError("Failed to fetch translations.");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    currentPage,
-    debouncedSearchTerm,
-    filters.language,
-    filters.projectId,
-    filters.status,
-  ]);
+        setLoading(true);
+        try {
+            const response = await translationService.getTranslations(
+                currentPage,
+                10,
+                {
+                    key: debouncedSearchTerm,
+                    language: filters.language,
+                    projectId: filters.projectId,
+                    status: filters.status !== "all" ? filters.status : undefined,
+                }
+            );
+            setTranslations(response.data.translations);
+            setPaginationData({
+                currentPage: response.data.currentPage,
+                totalPages: response.data.totalPages,
+                totalItems: response.data.totalItems,
+            });
+            setError(null);
+        } catch (err) {
+            setError("Failed to fetch translations.");
+        } finally {
+            setLoading(false);
+        }
+    }, [
+        currentPage,
+        debouncedSearchTerm,
+        filters.language,
+        filters.projectId,
+        filters.status,
+    ]);
 
-  useEffect(() => {
-    fetchTranslations();
-  }, [fetchTranslations]);
+    useEffect(() => {
+        fetchTranslations();
+    }, [fetchTranslations]);
 
-  const handleFilterChange = (filterName, value) => {
-    console.log('Filter changed:', filterName, value);
-    setFilters((prev) => ({ ...prev, [filterName]: value }));
-    setCurrentPage(1);
-  };
+    const handleFilterChange = (filterName, value) => {
+        setFilters((prev) => ({ ...prev, [filterName]: value }));
+        setCurrentPage(1);
+    };
 
-  const handleNavigateToAnomalyDashboard = () => {
-    navigate("/admin/anomalies");
-  };
+    const handleNavigateToAnomalyDashboard = () => {
+        navigate("/admin/anomalies");
+    };
 
-  const handlePageChange = (page) => setCurrentPage(page);
-  const handleAddNew = () => setAddModalOpen(true);
-  const handleOpenLangModal = () => {
-    if (!filters.projectId) {
-      alert("Please select a project first.");
-      return;
-    }
-    setLangModalOpen(true);
-  };
-  const handleEdit = (translation) => {
-    setEditingTranslation(translation);
-    setEditModalOpen(true);
-  };
+    const handlePageChange = (page) => setCurrentPage(page);
+    const handleAddNew = () => setAddModalOpen(true);
+    const handleOpenLangModal = () => {
+        if (!filters.projectId) {
+            alert("Please select a project first.");
+            return;
+        }
+        setLangModalOpen(true);
+    };
+    const handleEdit = (translation) => {
+        setEditingTranslation(translation);
+        setEditModalOpen(true);
+    };
 
-  const handleDeleteRequest = (translation) => {
-    setDeleteTarget(translation);
-  };
+    // --- 3. This function now ONLY opens the modal ---
+    const handleDeleteRequest = (translation) => {
+        setDeleteTarget(translation);
+    };
 
   const handleConfirmDelete = async () => {
     if (deleteTarget) {
@@ -273,8 +288,8 @@ const Home = () => {
     URL.revokeObjectURL(url);
   };
 
-  const isAnyModalOpen =
-    isAddModalOpen || isEditModalOpen || isLangModalOpen || !!deleteTarget;
+    const isAnyModalOpen =
+        isAddModalOpen || isEditModalOpen || isLangModalOpen || !!deleteTarget;
 
   return (
     <>
@@ -386,6 +401,14 @@ const Home = () => {
       />
     </>
   );
+};
+
+const Home = () => {
+    return (
+        <ErrorBoundary>
+            <HomeContent />
+        </ErrorBoundary>
+    );
 };
 
 export default Home;

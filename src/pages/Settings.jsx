@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
-import ProjectAndLanguageSettings from './ProjectAndLanguageSettings'; // Import your existing component
+import ProjectAndLanguageSettings from './ProjectAndLanguageSettings';
+import UserProfile from '../components/UserProfile';
+import ReadabilityValidator from '../components/ReadabilityValidator'; // Import from final-2
+import UserSettings from '../components/UserListComponents/UserSettings';
 
 const Settings = () => {
     const { user } = useAuthContext();
@@ -8,6 +11,8 @@ const Settings = () => {
 
     // Check if user has permission for Project & Language Management
     const hasManagementAccess = user && (user.role === 'Admin');
+    // Check if user has admin access for user management
+    const isAdmin = user && user.role === 'Admin';
 
     return (
         <main className="flex-grow p-5 bg-brand-bg-main min-h-screen">
@@ -17,11 +22,10 @@ const Settings = () => {
                 {/* Tab Navigation */}
                 <div className="flex mb-6 border-b border-gray-200">
                     <button
-                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
-                            activeTab === 'profile'
-                                ? 'text-indigo-700 border-indigo-700 bg-white'
-                                : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
-                        }`}
+                        className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${activeTab === 'profile'
+                            ? 'text-indigo-700 border-indigo-700 bg-white'
+                            : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
                         onClick={() => setActiveTab('profile')}
                     >
                         User Profile
@@ -40,9 +44,25 @@ const Settings = () => {
                             Project & Language Management
                         </button>
                     )}
+
+                    {/* Add User Management tab for Admins */}
+                    {isAdmin && (
+                        <button
+                            className={`py-3 px-6 font-medium text-base mr-2 rounded-t-lg border-b-2 focus:outline-none transition-colors ${
+                                activeTab === 'users'
+                                    ? 'text-indigo-700 border-indigo-700 bg-white'
+                                    : 'text-gray-500 border-transparent hover:text-indigo-600 hover:border-gray-300'
+                            }`}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            User Management
+                        </button>
+                    )}
                 </div>
 
-                {/* User Profile Section */}
+                {/* Tab Contents */}
+                
+                {/* User Profile Section - Enhanced version from final-3 */}
                 {activeTab === 'profile' && (
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <h2 className="text-xl font-semibold mb-4">User Profile</h2>
@@ -50,57 +70,55 @@ const Settings = () => {
                             <p className="text-gray-600">
                                 View and manage your account information and preferences.
                             </p>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Username</label>
-                                    <input 
-                                        type="text" 
-                                        value={user?.userName || ''} 
-                                        readOnly 
+                                    <input
+                                        type="text"
+                                        value={user?.userName || ''}
+                                        readOnly
                                         className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Role</label>
-                                    <input 
-                                        type="text" 
-                                        value={user?.role || ''} 
-                                        readOnly 
+                                    <input
+                                        type="text"
+                                        value={user?.role || ''}
+                                        readOnly
                                         className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 capitalize focus:outline-none"
                                     />
                                 </div>
-                                
+
                                 {user?.email && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
-                                        <input 
-                                            type="email" 
-                                            value={user.email} 
-                                            readOnly 
+                                        <input
+                                            type="email"
+                                            value={user.email}
+                                            readOnly
                                             className="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-800 focus:outline-none"
                                         />
                                     </div>
                                 )}
-                                
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Account Status</label>
                                     <div className="flex items-center">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                            user?.isActive === true 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            <span className={`w-2 h-2 rounded-full mr-2 ${
-                                                user?.isActive === true ? 'bg-green-400' : 'bg-red-400'
-                                            }`}></span>
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user?.isActive === true
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
+                                            }`}>
+                                            <span className={`w-2 h-2 rounded-full mr-2 ${user?.isActive === true ? 'bg-green-400' : 'bg-red-400'
+                                                }`}></span>
                                             {user?.isActive === true ? 'Active' : 'Inactive'}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="border-t pt-6 mt-6">
                                 <h3 className="text-lg font-medium text-gray-800 mb-4">Account Actions</h3>
                                 <div className="flex flex-wrap gap-3">
@@ -113,18 +131,22 @@ const Settings = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Include the original UserProfile component as well for any additional functionality */}
+                        <div className="mt-6 border-t pt-6">
+                            <UserProfile />
+                        </div>
                     </div>
                 )}
 
                 {/* Project & Language Management Section - Role-based access */}
                 {activeTab === 'management' && hasManagementAccess && (
                     <div>
-                        {/* Import and render the ProjectAndLanguageSettings component */}
                         <ProjectAndLanguageSettings />
                     </div>
                 )}
 
-                {/* Access Denied Message for non-privileged users */}
+                {/* Project & Language Management Access Denied */}
                 {activeTab === 'management' && !hasManagementAccess && (
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="text-center py-8">
@@ -135,7 +157,35 @@ const Settings = () => {
                             </div>
                             <h3 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h3>
                             <p className="text-gray-600">
-                                Project & Language Management is only available for Admin and Developer roles.
+                                Project & Language Management is only available for Admin roles.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Admin-only User Management Section */}
+                {activeTab === 'users' && isAdmin && (
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h2 className="text-xl font-semibold mb-4">User Management</h2>
+                        <p className="text-gray-600 mb-6">
+                            Manage user accounts, roles, and permissions.
+                        </p>
+                        <UserSettings />
+                    </div>
+                )}
+
+                {/* User Management Access Denied */}
+                {activeTab === 'users' && !isAdmin && (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="text-center py-8">
+                            <div className="text-red-500 mb-4">
+                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Access Restricted</h3>
+                            <p className="text-gray-600">
+                                User Management is only available for Admin users.
                             </p>
                         </div>
                     </div>

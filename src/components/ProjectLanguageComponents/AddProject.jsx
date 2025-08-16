@@ -699,8 +699,8 @@ const handleCSVUpload = (e) => {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select default language (optional)</option>
-              {getAssignedLanguageObjects().map((lang) => (
-                <option key={lang._id} value={lang.code}>
+              {getAssignedLanguageObjects().map((lang, index) => (
+                <option key={`${lang._id}-${index}`} value={lang.code}>
                   {lang.name} ({lang.code})
                 </option>
               ))}

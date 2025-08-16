@@ -1,11 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, RotateCcw, Eye, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, RotateCcw, Eye, AlertCircle, X } from 'lucide-react';
+import revisionService from '../../services/revisionService';
+
+// Revert Confirmation Modal Component
+const RevertConfirmationModal = ({ isOpen, onClose, onConfirm, revision, revIndex, isReverting }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+            <div
+                className="bg-white rounded-lg shadow-xl border max-w-md w-full mx-4"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <RotateCcw className="w-5 h-5 text-brand-purple-base" />
+                            Confirm Version Revert
+                        </h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            disabled={isReverting}
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="mb-6">
+                        <p className="text-gray-600 mb-4">
+                            Are you sure you want to revert to this version? Your current changes will be saved as a new revision.
+                        </p>
+
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="text-sm font-medium text-gray-800 mb-2">
+                                Reverting to Version {revIndex !== null ? `${revision?.length - revIndex}` : ''}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-2">
+                                Created {revision?.createdAt ? new Date(revision.createdAt).toLocaleString() : ''}
+                                by {revision?.author?.userName || 'Unknown'}
+                            </div>
+                            <div className="text-sm text-gray-700 bg-white border rounded p-2 max-h-24 overflow-y-auto">
+                                {revision?.text || 'No text available'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={onClose}
+                            disabled={isReverting}
+                            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            disabled={isReverting}
+                            className="px-4 py-2 bg-brand-purple-base text-white rounded-md hover:bg-brand-purple-base/80 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isReverting ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Reverting...
+                                </>
+                            ) : (
+                                <>
+                                    <RotateCcw className="w-4 h-4" />
+                                    Revert to This Version
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const VersionHistory = ({
     translationId,
     currentText,
     onRevert,
-    onClose,
     className = ""
 }) => {
     const [revisions, setRevisions] = useState([]);
@@ -13,36 +89,75 @@ const VersionHistory = ({
     const [diff, setDiff] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [reverting, setReverting] = useState(null);
+    const [showRevertModal, setShowRevertModal] = useState(false);
+    const [selectedRevision, setSelectedRevision] = useState(null);
+    const [selectedRevisionIndex, setSelectedRevisionIndex] = useState(null);
+    const [diffLoading, setDiffLoading] = useState(false);
 
-    // Fetch revisions on component mount
+    // Refs for managing timeouts and cleanup
+    const hoverTimeoutRef = useRef(null);
+    const diffTimeoutRef = useRef(null);
+
+    // Cleanup timeouts on unmount
     useEffect(() => {
-        fetchRevisions();
+        return () => {
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+            }
+            if (diffTimeoutRef.current) {
+                clearTimeout(diffTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Fetch revisions on component mount or when translation ID changes
+    useEffect(() => {
+        if (translationId) {
+            fetchRevisions();
+        }
     }, [translationId]);
 
-    // Fetch diff when hovering over a revision
+    // Handle diff fetching with debouncing
     useEffect(() => {
-        if (hoveredIndex !== null) {
-            fetchDiff(hoveredIndex);
+        // Clear existing timeout
+        if (diffTimeoutRef.current) {
+            clearTimeout(diffTimeoutRef.current);
+        }
+
+        if (hoveredIndex !== null && translationId) {
+            // Add a 800ms delay before fetching diff
+            diffTimeoutRef.current = setTimeout(() => {
+                fetchDiff(hoveredIndex);
+            }, 300);
         } else {
             setDiff(null);
+            setDiffLoading(false);
         }
-    }, [hoveredIndex]);
+
+        // Cleanup function
+        return () => {
+            if (diffTimeoutRef.current) {
+                clearTimeout(diffTimeoutRef.current);
+            }
+        };
+    }, [hoveredIndex, translationId]);
 
     const fetchRevisions = async () => {
+        if (!translationId) {
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await fetch(`/api/translations/revisions/${translationId}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch revisions');
-
-            const data = await response.json();
-            setRevisions(data);
+            setError(null);
+            const data = await revisionService.getRevisions(translationId);
+            setRevisions(Array.isArray(data) ? data : []);
         } catch (err) {
-            setError(err.message);
+            console.error('Error fetching revisions:', err);
+            setError(err.response?.data?.error || err.message || 'Failed to fetch revisions');
+            setRevisions([]);
         } finally {
             setLoading(false);
         }
@@ -50,60 +165,148 @@ const VersionHistory = ({
 
     const fetchDiff = async (revIndex) => {
         try {
-            const response = await fetch(`/api/translations/diff/${translationId}/${revIndex}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch diff');
-
-            const diffData = await response.json();
+            setDiffLoading(true);
+            const diffData = await revisionService.getDiff(translationId, revIndex);
             setDiff(diffData);
         } catch (err) {
             console.error('Error fetching diff:', err);
+            setDiff(null);
+        } finally {
+            setDiffLoading(false);
         }
     };
 
-    const handleRevert = async (revIndex) => {
-        try {
-            const response = await fetch(`/api/translations/revert/${translationId}/${revIndex}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to revert');
-
-            const result = await response.json();
-            onRevert(result.newText);
-            fetchRevisions(); // Refresh revisions after revert
-        } catch (err) {
-            setError(err.message);
+    const handleHoverStart = (index) => {
+        // Clear any existing hover timeout
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
         }
+
+        // Set new hover timeout for 300ms delay
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredIndex(index);
+        }, 100);
+    };
+
+    const handleHoverEnd = () => {
+        // Clear hover timeout
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+        }
+
+        // Add slight delay before hiding diff to prevent flickering
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredIndex(null);
+        }, 100);
+    };
+
+    const handleDiffHover = () => {
+        // Keep diff visible when hovering over it
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+        }
+    };
+
+    const handleDiffLeave = () => {
+        // Hide diff when leaving the diff area
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredIndex(null);
+        }, 200);
+    };
+
+    const handleRevertClick = (revision, index) => {
+        if (reverting !== null) return;
+
+        setSelectedRevision(revision);
+        setSelectedRevisionIndex(index);
+        setShowRevertModal(true);
+    };
+
+    const handleRevertConfirm = async () => {
+        if (!selectedRevision || selectedRevisionIndex === null) return;
+
+        try {
+            setReverting(selectedRevisionIndex);
+            setError(null);
+
+            const result = await revisionService.revertRevision(translationId, selectedRevisionIndex);
+
+            // Call the parent component's onRevert callback
+            if (onRevert) {
+                onRevert(result.newText);
+            }
+
+            // Refresh revisions to show the new state
+            await fetchRevisions();
+
+            // Clear hover state
+            setHoveredIndex(null);
+            setShowRevertModal(false);
+            setSelectedRevision(null);
+            setSelectedRevisionIndex(null);
+
+        } catch (err) {
+            console.error('Error reverting revision:', err);
+            setError(err.response?.data?.error || err.message || 'Failed to revert revision');
+        } finally {
+            setReverting(null);
+        }
+    };
+
+    const handleRevertCancel = () => {
+        setShowRevertModal(false);
+        setSelectedRevision(null);
+        setSelectedRevisionIndex(null);
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        try {
+            return new Date(dateString).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        } catch (err) {
+            return 'Invalid date';
+        }
     };
 
     const renderDiff = (index) => {
-        if (hoveredIndex !== index || !diff) return null;
+        if (hoveredIndex !== index) return null;
+
+        if (diffLoading) {
+            return (
+                <div
+                    className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    onMouseEnter={handleDiffHover}
+                    onMouseLeave={handleDiffLeave}
+                >
+                    <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        Loading changes...
+                    </h4>
+                    <div className="flex items-center justify-center py-4">
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-brand-purple-base rounded-full animate-spin"></div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (!diff || !Array.isArray(diff)) return null;
 
         return (
-            <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-2">
+            <div
+                className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                onMouseEnter={handleDiffHover}
+                onMouseLeave={handleDiffLeave}
+            >
+                <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Eye className="w-4 h-4" />
-                    Comparison with Current
+                    Changes from this version
                 </h4>
-                <div className="text-sm font-mono leading-relaxed whitespace-pre-wrap">
+                <div className="text-sm font-mono leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto">
                     {diff.map((part, idx) => (
                         <span
                             key={idx}
@@ -124,136 +327,157 @@ const VersionHistory = ({
 
     if (loading) {
         return (
-            <div className={`bg-white rounded-lg shadow-lg border p-6 ${className}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-purple-600" />
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                <div className="p-4 border-b flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800">
                         Version History
                     </h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
                 </div>
-                <div className="text-center text-gray-500">Loading revisions...</div>
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple-base mx-auto mb-4"></div>
+                        Loading revisions...
+                    </div>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className={`bg-white rounded-lg shadow-lg border p-6 ${className}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-purple-600" />
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                <div className="p-4 border-b flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800">
                         Version History
                     </h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
                 </div>
-                <div className="text-center text-red-500">Error: {error}</div>
+                <div className="flex-1 flex items-center justify-center text-red-500">
+                    <div className="text-center">
+                        <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm mb-4">{error}</p>
+                        <button
+                            onClick={fetchRevisions}
+                            className="px-4 py-2 bg-brand-purple-base text-white rounded hover:bg-brand-purple-base/80 transition-colors text-sm"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className={`bg-white rounded-lg shadow-lg border max-w-md ${className}`}>
-            <div className="flex items-center justify-between p-4 border-b bg-purple-600">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    Version History
-                </h3>
-                <button
-                    onClick={onClose}
-                    className="text-purple-200 hover:text-white transition-colors"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            </div>
-
-            <div className="p-4">
-                {/* Current Version */}
-                <div className="mb-4 p-3 bg-purple-50 border-l-4 border-purple-500 rounded-r-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="font-medium text-purple-800 text-sm">Current Version</div>
-                            <div className="text-purple-600 text-xs">Active now</div>
-                        </div>
-                        <div className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                            Latest
-                        </div>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-700 line-clamp-2">
-                        {currentText}
-                    </div>
+        <>
+            <div className={`h-full flex flex-col bg-white rounded-lg shadow-lg border ${className}`}>
+                {/* Header - Fixed */}
+                <div className="p-4 border-b flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                        Version History
+                    </h3>
                 </div>
 
-                {/* Revision History */}
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Previous Versions</h4>
-
-                    {revisions.length === 0 ? (
-                        <div className="text-center text-gray-500 text-sm py-4">
-                            No previous versions available
-                        </div>
-                    ) : (
-                        revisions.map((revision, index) => (
-                            <div key={index} className="space-y-0">
-                                <div
-                                    className={`p-3 border rounded-lg transition-all cursor-pointer ${hoveredIndex === index
-                                        ? 'border-purple-400 bg-purple-50'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    onMouseEnter={() => setHoveredIndex(index)}
-                                    onMouseLeave={() => setHoveredIndex(null)}
-                                    onClick={() => {
-                                        if (window.confirm('Are you sure you want to revert to this version?')) {
-                                            handleRevert(index);
-                                        }
-                                    }}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="text-sm font-medium text-gray-800">
-                                                    Version {revisions.length - index}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {formatDate(revision.createdAt)}
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-gray-600 mt-1">
-                                                by {revision.author?.userName || 'Unknown'}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {hoveredIndex === index && (
-                                                <div className="flex items-center gap-1 text-purple-600">
-                                                    <RotateCcw className="w-4 h-4" />
-                                                    <span className="text-xs">Click to revert</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 text-sm text-gray-700 line-clamp-1">
-                                        {revision.text}
-                                    </div>
+                {/* Scrollable Content - Takes remaining space */}
+                <div className="flex-1 overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                        {/* Current Version */}
+                        <div className="p-3 bg-gray-50 border-l-4 border-brand-purple-base rounded-r-lg">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="font-medium text-gray-800 text-sm">Current Version</div>
+                                    <div className="text-gray-600 text-xs">Active now</div>
                                 </div>
-
-                                {/* Diff Display - appears right under the hovered item */}
-                                {renderDiff(index)}
+                                <div className="bg-brand-purple-base/10 text-brand-purple-base text-xs px-2 py-1 rounded-full">
+                                    Latest
+                                </div>
                             </div>
-                        ))
-                    )}
+                            <div className="mt-2 text-sm text-gray-700">
+                                {currentText || 'No text available'}
+                            </div>
+                        </div>
+
+                        {/* Previous Versions Header */}
+                        <h4 className="text-sm font-medium text-gray-600">Previous Versions</h4>
+
+                        {/* Revisions List */}
+                        {revisions.length === 0 ? (
+                            <div className="text-center text-gray-500 text-sm py-8">
+                                <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                                No previous versions available
+                            </div>
+                        ) : (
+                            revisions.map((revision, index) => (
+                                <div key={`${revision._id || index}-${revision.createdAt}`} className="mb-4">
+                                    <div
+                                        className={`p-3 border rounded-lg transition-all cursor-pointer ${hoveredIndex === index
+                                            ? 'border-brand-purple-base bg-brand-purple-base/5'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            } ${reverting === index ? 'opacity-50 cursor-not-allowed' : ''
+                                            }`}
+                                        onMouseEnter={() => !reverting && handleHoverStart(index)}
+                                        onMouseLeave={() => !reverting && handleHoverEnd()}
+                                        onClick={() => {
+                                            if (reverting === index) return;
+                                            handleRevertClick(revision, index);
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-sm font-medium text-gray-800">
+                                                        Version {revisions.length - index}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {formatDate(revision.createdAt)}
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-gray-600 mt-1">
+                                                    by {revision.author?.userName || 'Unknown'}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {reverting === index ? (
+                                                    <div className="flex items-center gap-1 text-gray-500">
+                                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-brand-purple-base rounded-full animate-spin"></div>
+                                                        <span className="text-xs">Reverting...</span>
+                                                    </div>
+                                                ) : hoveredIndex === index ? (
+                                                    <div className="flex items-center gap-1 text-brand-purple-base">
+                                                        <RotateCcw className="w-4 h-4" />
+                                                        <span className="text-xs">Click to revert</span>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-700">
+                                            {revision.text || 'No text available'}
+                                        </div>
+                                    </div>
+
+                                    {/* Diff Display */}
+                                    {renderDiff(index)}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer - Fixed */}
+                <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 flex-shrink-0">
+                    <p>Hover to see changes, click to revert. Current changes will be saved automatically.</p>
                 </div>
             </div>
-        </div>
+
+            {/* Revert Confirmation Modal */}
+            <RevertConfirmationModal
+                isOpen={showRevertModal}
+                onClose={handleRevertCancel}
+                onConfirm={handleRevertConfirm}
+                revision={selectedRevision}
+                revIndex={selectedRevisionIndex}
+                isReverting={reverting !== null}
+            />
+        </>
     );
 };
 

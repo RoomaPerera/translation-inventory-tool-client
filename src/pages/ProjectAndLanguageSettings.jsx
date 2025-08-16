@@ -106,7 +106,7 @@ const ProjectAndLanguageSettings = () => {
   const [notifications, setNotifications] = useState([]);
   
   const showNotification = (message, type = 'info') => {
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     const notification = { id, message, type };
     setNotifications(prev => [...prev, notification]);
     setTimeout(() => {

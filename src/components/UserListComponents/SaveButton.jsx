@@ -5,7 +5,7 @@ export default function SaveButton({ children = 'Save', ...props }) {
     return (
         <Button
             variant="primary"
-            className="px-6 py-3"
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
             {...props}
         >
             {children}
