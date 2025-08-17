@@ -323,11 +323,6 @@ const EditProjectForm = ({ project = {}, onSuccess, availableLanguages = [] }) =
                         {langObj && (
                           <span className="ml-1 text-xs opacity-75">({langObj.name})</span>
                         )}
-                        {/* {isDefault && (
-                          <span className="ml-2 text-xs bg-green-600 text-white px-1.5 py-0.5 rounded-full">
-                            DEFAULT
-                          </span>
-                        )} */}
                       </span>
                       <button
                         type="button"

@@ -1,5 +1,3 @@
-// AddProject.jsx - Updated to use the new CSV import methods
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../hooks/useAuthContext';
@@ -323,7 +321,7 @@ const handleCSVUpload = (e) => {
   });
 };
 
-  // UPDATED: Enhanced CSV import function with better error handling
+  //Enhanced CSV import function with better error handling
   const importTranslationsFromCSV = async (projectId) => {
     if (!formData.csvKeys || formData.csvKeys.length === 0 || !formData.languages || formData.languages.length === 0) {
       return { created: 0, skipped: 0 };
@@ -402,7 +400,7 @@ const handleCSVUpload = (e) => {
     return true;
   };
 
-  // UPDATED: Enhanced form submission with better error handling and progress tracking
+  //Enhanced form submission with better error handling and progress tracking
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -427,7 +425,7 @@ const handleCSVUpload = (e) => {
       const result = await projectService.addProject(projectData);
       console.log('Project created successfully:', result);
       
-      // UPDATED: Enhanced CSV import with better status reporting
+      // Enhanced CSV import with better status reporting
       let csvImportResult = null;
       if (result && result._id && formData.csvKeys.length > 0) {
         console.log('Starting CSV import...');
@@ -449,7 +447,7 @@ const handleCSVUpload = (e) => {
         successMessage += ` Default language set to ${defaultLangName || formData.defaultLanguage}.`;
       }
       
-      // UPDATED: Enhanced CSV import success message with detailed stats
+      // Enhanced CSV import success message with detailed stats
       if (csvImportResult && formData.csvKeys.length > 0) {
         const expectedTotal = formData.csvKeys.length * formData.languages.length;
         
@@ -707,28 +705,7 @@ const handleCSVUpload = (e) => {
             </select>
           </div>
         )}
-        
-        {/* ENHANCED: CSV File Upload with better validation and preview */}
         <div>
-          {/* <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="csvFile">
-            Import CSV Keys (Optional)
-          </label> */}
-          {/* <input
-            type="file"
-            id="csvFile"
-            accept=".csv"
-            onChange={handleCSVUpload}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-          /> */}
-          <div className="text-xs text-gray-500 mt-1">
-            {/* Upload a CSV file containing translation keys. Max file size: 5MB
-            <br />
-            <strong>Supported formats:</strong> 
-            • Column format: one key per cell/row
-            • Inline format: "key1,key2,key3" (comma-separated in one cell)
-            • Mixed: combination of both formats */}
-          </div>
-          
           {/* Enhanced CSV Preview with detailed information */}
           {formData.csvKeys.length > 0 && (
             <div className="mt-2 p-3 bg-gray-50 rounded-md text-xs border">

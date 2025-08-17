@@ -1,20 +1,23 @@
+
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useNavigate } from 'react-router-dom';
 import projectService from '../services/projectService';
 import languageService from '../services/languageService';
-
-// Import reusable components
 import TabNavigation from '../components/reusableComponents/TabNavigation';
 import LanguageManagement from '../components/ProjectLanguageComponents/LanguageManagement';
 import Modal from '../components/reusableComponents/Modal';
-
-// Import forms
 import AddProject from '../components/ProjectLanguageComponents/AddProject';
 import EditProjectForm from '../components/ProjectLanguageComponents/EditProjectForm';
 import LanguageForm from '../components/ProjectLanguageComponents/LanguageForm';
 import DeleteProjectModal from '../components/ProjectLanguageComponents/DeleteProjectModal';
 import EditLanguageForm from '../components/ProjectLanguageComponents/EditLanguageModal';
+// New split components
+import ProjectOverview from '../components/ProjectAndLanguageSettings/ProjectOverview';
+import LanguageTab from '../components/ProjectAndLanguageSettings/LanguageTab';
+import Notifications from '../components/ProjectAndLanguageSettings/Notifications';
+import LoadingScreen from '../components/ProjectAndLanguageSettings/LoadingScreen';
+import LoginPrompt from '../components/ProjectAndLanguageSettings/LoginPrompt';
 
 const ProjectAndLanguageSettings = () => {
   const navigate = useNavigate();
@@ -451,135 +454,22 @@ const ProjectAndLanguageSettings = () => {
     }
   };
 
-  // Simple Project Overview Component
-  const ProjectOverview = () => (
-    <div>
-      <div className="mb-6 p-6 bg-white rounded-lg border border-gray-200">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-          <h1 className="text-xl font-semibold text-gray-800">Project Overview</h1>
-        </div>
-        <p className="text-gray-600">
-          Manage your translation projects and access detailed project information
-        </p>
-      </div>
-      
-      <div className="grid gap-6">
-        {/* Add Project Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Create New Project</span>
-              </h3>
-              <p className="text-gray-600">Start a new translation project with custom settings</p>
-            </div>
-            <button
-              onClick={handleAddProject}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <span className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Add Project</span>
-              </span>
-            </button>
-          </div>
-        </div>
 
-        {/* Your Projects Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                <span>Your Projects</span>
-              </h3>
-              <p className="text-gray-600">
-                View and manage all your projects ({stats.totalProjects} total)
-              </p>
-              {stats.totalProjects > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">
-                    {stats.projectsWithLanguages} Active
-                  </span>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleViewProjectDetails}
-              disabled={isLoadingProjects}
-              className="px-6 py-2 bg-teal-600 text-white rounded-md font-medium hover:bg-teal-700 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span>{isLoadingProjects ? 'Loading...' : 'View Projects'}</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        {stats.totalProjects > 0 && (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-              <span>Project Statistics</span>
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">{stats.totalProjects}</div>
-                <div className="text-sm text-gray-600">Total Projects</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-teal-600">{stats.projectsWithLanguages}</div>
-                <div className="text-sm text-gray-600">With Languages</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalLanguages}</div>
-                <div className="text-sm text-gray-600">Available Languages</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // FIXED: Added user check for early return
+  // Render
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Please log in to access this page</h2>
-          <p className="text-gray-600">You need to be logged in to manage projects and languages.</p>
-        </div>
-      </div>
-    );
+    return <LoginPrompt />;
   }
 
   if (isPageLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin border-t-indigo-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800">Loading...</h2>
-          <p className="text-gray-600">Please wait while we load your data.</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
+  // FIXED: Added user check for early return
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Enhanced Tab Navigation */}
           <div className="overflow-x-auto">
             <TabNavigation 
               activeTab={activeTab} 
@@ -593,34 +483,27 @@ const ProjectAndLanguageSettings = () => {
       {/* Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div>
-          {activeTab === 'projects' && <ProjectOverview />}
-          
+          {activeTab === 'projects' && (
+            <ProjectOverview
+              stats={stats}
+              handleAddProject={handleAddProject}
+              handleViewProjectDetails={handleViewProjectDetails}
+              isLoadingProjects={isLoadingProjects}
+            />
+          )}
           {activeTab === 'languages' && (
-            <div>
-              <div className="mb-6 p-6 bg-white rounded-lg border border-gray-200">
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  <h2 className="text-xl font-semibold text-gray-800">Language Management</h2>
-                </div>
-                <p className="text-gray-600">
-                  Add and configure supported languages for your projects
-                </p>
-              </div>
-              
-              <div className="space-y-6">
-                <LanguageManagement
-                  languages={Array.isArray(languages) ? languages : []}
-                  isLoadingLanguages={isLoadingLanguages}
-                  onAddLanguage={handleAddLanguage}
-                  onEditLanguage={handleEditLanguage}  
-                  onDeleteLanguage={handleDeleteLanguage}
-                />
-              </div>
-            </div>
+            <LanguageTab
+              languages={languages}
+              isLoadingLanguages={isLoadingLanguages}
+              handleAddLanguage={handleAddLanguage}
+              handleEditLanguage={handleEditLanguage}
+              handleDeleteLanguage={handleDeleteLanguage}
+              LanguageManagement={LanguageManagement}
+            />
           )}
         </div>
       </div>
-      
+
       {/* Modal */}
       <Modal
         isOpen={showAddForm || showAddLanguageForm || showEditForm || showEditLanguageForm || showDeleteModal}
@@ -634,30 +517,7 @@ const ProjectAndLanguageSettings = () => {
       </Modal>
 
       {/* Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className={`px-4 py-3 rounded-lg shadow-lg border text-sm ${
-              notification.type === 'success' 
-                ? 'bg-green-50 border-green-200 text-green-800' 
-                : notification.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                notification.type === 'success' ? 'bg-green-500' :
-                notification.type === 'error' ? 'bg-red-500' :
-                'bg-blue-500'
-              }`}></div>
-              <span className="font-medium break-words">{notification.message}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
+      <Notifications notifications={notifications} />
     </div>
   );
 };
