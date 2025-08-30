@@ -1,30 +1,77 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-//pages and components
-import Registration from './pages/registration'
-import Login from "./pages/login"
-import Navbar from "./components/navBar"
+import { useAuthContext } from "./hooks/useAuthContext";
+import ProtectedLayout from "./components/ProtectedLayout";
 
+// Public pages
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+
+// Protected pages
+import Home from "./pages/Home";
+import AllEntries from "./pages/AllEntries";
+import ActivityLog from "./pages/ActivityLog";
+import Settings from "./pages/Settings";
+import { ActivityLogProvider } from "./context/ActivityLogContext";
+
+function PrivateRoute({ children }) {
+  const { user } = useAuthContext();
+  return user ? children : <Navigate to="/login" />;
+}
 function App() {
+  const { authReady } = useAuthContext();
+
+  // Prevent route flicker while checking auth state
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-xl text-gray-600">Loading...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="App">
-      <Router>
-        <div className="pages">
-          <Routes>
-            <Route
-              path="/register"
-              element={<Registration />}
-            />
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-          </Routes>
-        </div>
-      </Router>
-    </div>
-  )
-}
+    <Router>
+      <Routes>
+        {/* PUBLIC */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-export default App
+        {/* PROTECTED */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/all-entries" element={<AllEntries />} />
+
+          <Route
+            path="/activity-log"
+            element={
+              <ActivityLogProvider>
+                <ActivityLog />
+              </ActivityLogProvider>
+            }
+          />
+
+          <Route
+            path="/admin/anomalies"
+            element={
+              <PrivateRoute>
+                <AdminAnomalyDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          <Route path="/settings" element={<Settings />} />
+          {/* Redirect unmatched routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+export default App;
