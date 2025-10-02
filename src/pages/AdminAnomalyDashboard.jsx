@@ -1,76 +1,88 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { flushSync } from "react-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { API_BASE } from "../config/env";
+import API from "../services/axiosInstance";
 
 // Fetch anomalies with optional filters
 const fetchAnomalies = async (filters = {}) => {
   const filtered = Object.fromEntries(
     Object.entries(filters).filter(([_, v]) => v !== "")
   );
-  const params = new URLSearchParams(filtered).toString();
-  const url = `${API_BASE}/api/anomalies?${params}`;
-
-  console.log(`Fetching anomalies from: ${url}`);
-  console.log(`Filters:`, filters);
 
   try {
-    const res = await fetch(url, {
-      credentials: "include",
-    });
-
-    console.log(`Response status: ${res.status}`);
-
-    if (!res.ok) {
-      console.error(`API Error: ${res.status} ${res.statusText}`);
-      const errorText = await res.text();
-      console.error(`Error body:`, errorText);
-      throw new Error(`API Error: ${res.status} ${res.statusText}`);
-    }
-
-    const json = await res.json();
-    console.log(`API Response:`, json);
+    const response = await API.get("/anomalies", { params: filtered });
+    const json = response.data;
 
     // Backend returns: { success: true, anomalies: [...], pagination: {...} }
     if (json.success && Array.isArray(json.anomalies)) {
-      console.log(
-        `Returning ${json.anomalies.length} anomalies (success format)`
-      );
       return json.anomalies;
     } else if (Array.isArray(json)) {
-      console.log(`Returning ${json.length} anomalies (direct array format)`);
       return json;
     } else if (Array.isArray(json.anomalies)) {
-      console.log(
-        `Returning ${json.anomalies.length} anomalies (anomalies property)`
-      );
       return json.anomalies;
     }
 
     console.error("Unexpected API response format:", json);
     return [];
   } catch (error) {
-    console.error("Fetch error:", error);
+    console.error("Fetch error:", error.response?.data || error.message);
     throw error;
   }
 };
 
 // Review an anomaly
 const reviewAnomaly = async (id) => {
-  const res = await fetch(`${API_BASE}/api/anomalies/${id}/review`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-  return res.json();
+  try {
+    const response = await API.patch(`/anomalies/${id}/review`);
+    return response.data;
+  } catch (error) {
+    console.error(` Review API error details:`, {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    // Provide more specific error messages
+    if (error.response?.status === 401) {
+      throw new Error(`Authentication failed: Please log in again`);
+    } else if (error.response?.status === 404) {
+      throw new Error(`Anomaly not found: ID ${id} doesn't exist`);
+    } else if (error.response?.status === 500) {
+      throw new Error(
+        `Server error: ${
+          error.response?.data?.message || "Internal server error"
+        }`
+      );
+    } else if (error.code === "ECONNREFUSED") {
+      throw new Error(`Connection refused: Backend server might be down`);
+    } else if (
+      error.code === "NETWORK_ERROR" ||
+      error.message === "Network Error"
+    ) {
+      throw new Error(
+        `Network error: Cannot connect to server at ${API.defaults.baseURL}`
+      );
+    } else {
+      throw new Error(
+        `Review failed: ${error.response?.data?.message || error.message}`
+      );
+    }
+  }
 };
 
 // Delete an anomaly
 const deleteAnomaly = async (id) => {
-  const res = await fetch(`${API_BASE}/api/anomalies/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  return res.json();
+  try {
+    const response = await API.delete(`/anomalies/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Delete API error:`, error.response?.data || error.message);
+    throw new Error(
+      `Delete failed: ${error.response?.data?.message || error.message}`
+    );
+  }
 };
 
 // BlockIPButton: Handles blocking a single IP
@@ -82,21 +94,23 @@ function BlockIPButton({ ip, onBlocked }) {
     setBlocking(true);
     setBlockMessage("");
     try {
-      const res = await fetch(`${API_BASE}/api/anomalies/block-ip`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ip }),
-      });
-      const json = await res.json();
+      const response = await API.post("/anomalies/block-ip", { ip });
+      const json = response.data;
       if (json.success) {
         setBlockMessage(`Blocked IP: ${ip}`);
         if (onBlocked) onBlocked(ip);
       } else {
         setBlockMessage(json.message || "Failed to block IP");
       }
-    } catch (e) {
-      setBlockMessage("Network error");
+    } catch (error) {
+      console.error("Block IP error:", error.response?.data || error.message);
+      if (error.response?.status === 401) {
+        setBlockMessage("Authentication failed. Please log in again.");
+      } else {
+        setBlockMessage(
+          `Network error: ${error.response?.data?.message || error.message}`
+        );
+      }
     }
     setBlocking(false);
   };
@@ -184,15 +198,26 @@ function AnomalyCard({ anomaly, tab, onReview, onDelete }) {
         </div>
         <div style={styles.cardActions}>
           {tab === "unreviewed" && (
-            <button
-              onClick={() => onReview(anomaly._id)}
-              style={{
-                ...styles.button,
-                ...styles.buttonGreen,
-              }}
-            >
-              Review
-            </button>
+            <>
+              <button
+                onClick={() => onReview(anomaly._id)}
+                style={{
+                  ...styles.button,
+                  ...styles.buttonGreen,
+                }}
+              >
+                Mark as Reviewed
+              </button>
+              <button
+                onClick={() => onDelete(anomaly._id)}
+                style={{
+                  ...styles.button,
+                  ...styles.buttonRed,
+                }}
+              >
+                Delete
+              </button>
+            </>
           )}
           {tab === "reviewed" && (
             <>
@@ -206,12 +231,12 @@ function AnomalyCard({ anomaly, tab, onReview, onDelete }) {
                 Delete
               </button>
               {/* Block IP buttons for all relevant IPs */}
-              {Array.isArray(anomaly.details.ips) &&
+              {Array.isArray(anomaly.details?.ips) &&
                 anomaly.details.ips.length > 0 &&
                 anomaly.details.ips.map((ip) => (
                   <BlockIPButton key={ip} ip={ip} />
                 ))}
-              {anomaly.details.ip && <BlockIPButton ip={anomaly.details.ip} />}
+              {anomaly.details?.ip && <BlockIPButton ip={anomaly.details.ip} />}
             </>
           )}
         </div>
@@ -221,12 +246,25 @@ function AnomalyCard({ anomaly, tab, onReview, onDelete }) {
 }
 
 // Tabs: Handles tab navigation
-function Tabs({ tab, setTab, unreviewedCount, reviewedCount }) {
+const Tabs = React.memo(function Tabs({
+  tab,
+  setTab,
+  unreviewedCount,
+  reviewedCount,
+}) {
+  // Ensure counts are numbers and not undefined/null
+  const safeUnreviewedCount =
+    typeof unreviewedCount === "number" ? unreviewedCount : 0;
+  const safeReviewedCount =
+    typeof reviewedCount === "number" ? reviewedCount : 0;
+
   console.log(
     "Tabs component - Unreviewed count:",
-    unreviewedCount,
+    safeUnreviewedCount,
     "Reviewed count:",
-    reviewedCount
+    safeReviewedCount,
+    "Rendering at:",
+    new Date().toISOString()
   );
 
   return (
@@ -241,10 +279,10 @@ function Tabs({ tab, setTab, unreviewedCount, reviewedCount }) {
               : styles.tabButtonHover),
           }}
         >
-          Unreviewed
-          {unreviewedCount > 0 && (
+          Unreviewed{" "}
+          {safeUnreviewedCount > 0 && (
             <span style={{ ...styles.badge, ...styles.badgeRed }}>
-              {unreviewedCount}
+              {safeUnreviewedCount}
             </span>
           )}
         </button>
@@ -257,17 +295,17 @@ function Tabs({ tab, setTab, unreviewedCount, reviewedCount }) {
               : styles.tabButtonHover),
           }}
         >
-          Reviewed
-          {reviewedCount > 0 && (
+          Reviewed{" "}
+          {safeReviewedCount > 0 && (
             <span style={{ ...styles.badge, ...styles.badgeGreen }}>
-              {reviewedCount}
+              {safeReviewedCount}
             </span>
           )}
         </button>
       </div>
     </div>
   );
-}
+});
 
 // Helper: Get severity icon
 function getSeverityIcon(severity) {
@@ -306,157 +344,204 @@ export default function AdminAnomalyDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Debug user authentication
-  console.log("AdminAnomalyDashboard - User:", user);
-  console.log("AdminAnomalyDashboard - User role:", user?.role);
-
   // Load anomalies from backend
-  const loadAnomalies = async () => {
+  const loadAnomalies = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
-      console.log("Loading anomalies...");
-      const [rev, unrev] = await Promise.all([
+      // Fetch both types with proper error handling
+      const [revResult, unrevResult] = await Promise.allSettled([
         fetchAnomalies({ reviewed: "true" }),
         fetchAnomalies({ reviewed: "false" }),
       ]);
-      console.log("Reviewed anomalies:", rev);
-      console.log("Unreviewed anomalies:", unrev);
-      console.log("Reviewed count:", Array.isArray(rev) ? rev.length : 0);
-      console.log("Unreviewed count:", Array.isArray(unrev) ? unrev.length : 0);
 
-      const reviewedArray = Array.isArray(rev) ? rev : [];
-      const unreviewedArray = Array.isArray(unrev) ? unrev : [];
+      // Handle reviewed anomalies
+      let reviewedArray = [];
+      if (revResult.status === "fulfilled") {
+        reviewedArray = Array.isArray(revResult.value) ? revResult.value : [];
+      } else {
+        console.error(" Failed to load reviewed anomalies:", revResult.reason);
+      }
+
+      // Handle unreviewed anomalies
+      let unreviewedArray = [];
+      if (unrevResult.status === "fulfilled") {
+        unreviewedArray = Array.isArray(unrevResult.value)
+          ? unrevResult.value
+          : [];
+      } else {
+        console.error(
+          " Failed to load unreviewed anomalies:",
+          unrevResult.reason
+        );
+      }
+
+      // Update state using flushSync to ensure immediate updates
+      flushSync(() => {
+        setReviewed(reviewedArray);
+        setUnreviewed(unreviewedArray);
+      });
 
       console.log(
-        "Setting state - Reviewed:",
-        reviewedArray.length,
-        "Unreviewed:",
-        unreviewedArray.length
+        ` State updated - Reviewed: ${reviewedArray.length}, Unreviewed: ${unreviewedArray.length}`
       );
-      setReviewed(reviewedArray);
-      setUnreviewed(unreviewedArray);
 
-      console.log(
-        "State updated - Reviewed:",
-        reviewedArray.length,
-        "Unreviewed:",
-        unreviewedArray.length
-      );
+      // Only show error if both requests failed
+      if (
+        revResult.status === "rejected" &&
+        unrevResult.status === "rejected"
+      ) {
+        setError("Failed to load anomalies from server");
+      }
     } catch (err) {
-      console.error("Error loading anomalies:", err);
-      setError(`Network error: ${err.message}`);
+      console.error(" Critical error loading anomalies:", err);
+      setError(`Failed to load anomalies: ${err.message}`);
+
+      // Set empty arrays on error using flushSync
+      flushSync(() => {
+        setReviewed([]);
+        setUnreviewed([]);
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    console.log("useEffect triggered - User:", user);
-    console.log(
-      "useEffect - User role check:",
-      user?.role,
-      "Expected: admin or Admin"
-    );
     if (!user || (user.role !== "admin" && user.role !== "Admin")) {
-      console.log("useEffect - User not authorized, returning early");
       return;
     }
-    console.log("useEffect - User authorized, loading anomalies");
     loadAnomalies();
     // eslint-disable-next-line
   }, [user]);
 
   // Review handler
   const handleReview = async (id) => {
+    if (!id) {
+      console.error(" No ID provided for review");
+      setError("Invalid anomaly ID");
+      return;
+    }
+
+    // Prevent double-clicks
+    if (loading) {
+      return;
+    }
+
     try {
-      console.log(`Reviewing anomaly with ID: ${id}`);
-      console.log(
-        `Before review - Unreviewed: ${unreviewed.length}, Reviewed: ${reviewed.length}`
-      );
+      // Find the anomaly first to ensure it exists
+      const anomalyToMove = unreviewed.find((a) => a._id === id);
+      if (!anomalyToMove) {
+        console.error(` Anomaly ${id} not found in unreviewed list`);
+        setError("Anomaly not found in unreviewed list");
+        return;
+      }
 
+      // Set loading state
+      setLoading(true);
+      setError(null);
+
+      // Make the API call
       const result = await reviewAnomaly(id);
-      console.log(`Review result:`, result);
+      if (result && result.success) {
+        // Create updated anomaly with reviewed status
+        const updatedAnomaly = { ...anomalyToMove, reviewed: true };
 
-      if (result.success) {
-        console.log(`Anomaly ${id} marked as reviewed successfully`);
+        // Calculate new arrays
+        const newUnreviewed = unreviewed.filter((a) => a._id !== id);
+        const newReviewed = [updatedAnomaly, ...reviewed];
 
-        // Immediately update the state instead of reloading
-        const anomalyToMove = unreviewed.find((a) => a._id === id);
-        if (anomalyToMove) {
-          console.log(`Moving anomaly from unreviewed to reviewed...`);
-
-          // Remove from unreviewed
-          const newUnreviewed = unreviewed.filter((a) => a._id !== id);
-          // Add to reviewed with updated reviewed status
-          const updatedAnomaly = { ...anomalyToMove, reviewed: true };
-          const newReviewed = [updatedAnomaly, ...reviewed];
-
-          console.log(
-            `Updating state - New unreviewed: ${newUnreviewed.length}, New reviewed: ${newReviewed.length}`
-          );
+        // Update state with flushSync for immediate UI updates
+        flushSync(() => {
           setUnreviewed(newUnreviewed);
           setReviewed(newReviewed);
+        });
 
-          console.log(`State updated immediately`);
-        } else {
-          console.log(`Anomaly not found in unreviewed list, reloading...`);
-          await loadAnomalies();
-        }
+        console.log(` UI state updated successfully`);
       } else {
-        console.log(`Failed to review anomaly:`, result.message);
-        setError("Failed to review anomaly");
+        console.error(` API call failed:`, result?.message);
+        setError(result?.message || "Failed to mark anomaly as reviewed");
       }
     } catch (error) {
-      console.error(`Error in handleReview:`, error);
-      setError("Failed to review anomaly");
-      await loadAnomalies();
+      console.error(` Network error in handleReview:`, error.message);
+      setError(`Network error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Delete handler
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this anomaly?"))
+    if (!id) {
+      console.error(" No ID provided for delete");
+      setError("Invalid anomaly ID");
       return;
+    }
+
+    // Prevent double-clicks
+    if (loading) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "  Are you sure you want to permanently delete this anomaly?"
+      )
+    ) {
+      return;
+    }
+
     try {
-      console.log(`Deleting anomaly with ID: ${id}`);
-      console.log(
-        `Before delete - Unreviewed: ${unreviewed.length}, Reviewed: ${reviewed.length}`
+      // Find which list contains the anomaly
+      const isInUnreviewed = unreviewed.some((a) => a._id === id);
+      const isInReviewed = reviewed.some((a) => a._id === id);
+      const anomalyToDelete = [...unreviewed, ...reviewed].find(
+        (a) => a._id === id
       );
 
+      if (!isInUnreviewed && !isInReviewed) {
+        console.error(`Anomaly ${id} not found in either list`);
+        setError("Anomaly not found");
+        return;
+      }
+
+      console.log(
+        ` Found anomaly to delete: ${anomalyToDelete?.type} - In unreviewed: ${isInUnreviewed}, In reviewed: ${isInReviewed}`
+      );
+
+      // Set loading state
+      setLoading(true);
+      setError(null);
+
+      // Make the API call to delete from database
       const result = await deleteAnomaly(id);
-      console.log(`Delete result:`, result);
 
-      if (result.success) {
-        console.log(`Anomaly ${id} deleted successfully`);
+      if (result && result.success) {
+        // Calculate new arrays
+        const newUnreviewed = unreviewed.filter((a) => a._id !== id);
+        const newReviewed = reviewed.filter((a) => a._id !== id);
 
-        // Immediately update the state instead of reloading
-        const isInUnreviewed = unreviewed.find((a) => a._id === id);
-        const isInReviewed = reviewed.find((a) => a._id === id);
+        console.log(
+          ` New counts - Unreviewed: ${newUnreviewed.length}, Reviewed: ${newReviewed.length}`
+        );
 
-        if (isInUnreviewed) {
-          console.log(`Removing from unreviewed...`);
-          const newUnreviewed = unreviewed.filter((a) => a._id !== id);
+        // Update state with flushSync for immediate UI updates
+        flushSync(() => {
           setUnreviewed(newUnreviewed);
-          console.log(`Updated unreviewed count: ${newUnreviewed.length}`);
-        } else if (isInReviewed) {
-          console.log(`Removing from reviewed...`);
-          const newReviewed = reviewed.filter((a) => a._id !== id);
           setReviewed(newReviewed);
-          console.log(`Updated reviewed count: ${newReviewed.length}`);
-        } else {
-          console.log(`Anomaly not found in either list, reloading...`);
-          await loadAnomalies();
-        }
+        });
 
-        console.log(`State updated immediately`);
+        console.log(` UI state updated successfully`);
       } else {
-        console.log(`Failed to delete anomaly:`, result.message);
-        setError("Failed to delete anomaly");
+        console.error(` Database deletion failed:`, result?.message);
+        setError(result?.message || "Failed to delete anomaly from database");
       }
     } catch (error) {
-      console.error(`Error in handleDelete:`, error);
-      setError("Failed to delete anomaly");
-      await loadAnomalies();
+      console.error(` Network error in handleDelete:`, error.message);
+      setError(`Network error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -491,10 +576,11 @@ export default function AdminAnomalyDashboard() {
         </div>
         {/* Tabs */}
         <Tabs
+          key={`tabs-${unreviewed.length}-${reviewed.length}`}
           tab={tab}
           setTab={setTab}
-          unreviewedCount={unreviewed.length}
-          reviewedCount={reviewed.length}
+          unreviewedCount={Array.isArray(unreviewed) ? unreviewed.length : 0}
+          reviewedCount={Array.isArray(reviewed) ? reviewed.length : 0}
         />
         {/* Content */}
         {loading ? (
